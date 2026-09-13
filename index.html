@@ -1,23 +1,23 @@
-// Global Durum (State) Objesi
+// Global State ve Supabase Bağlantısı
 const S = {
   user: null,
   profile: null,
   routines: []
 };
 
-// Supabase İstemcisi (Kendi projene göre anahtarların burada olmalı)
-const SUPABASE_URL = 'SENIN_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'SENIN_SUPABASE_ANON_KEY';
+// Kendi Supabase bilgilerini buraya yaz
+const SUPABASE_URL = 'BURAYA_SUPABASE_URL_YAZ';
+const SUPABASE_ANON_KEY = 'BURAYA_SUPABASE_ANON_KEY_YAZ';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Uygulamayı Başlatan Ana Fonksiyon
-async function boot(){
+// 1. Uygulama Açılış Fonksiyonu
+async function boot() {
   try {
     const { data: { session } } = await sb.auth.getSession();
-    if(session && session.user){
+    if (session && session.user) {
       S.user = session.user;
       await loadUserProfile();
-      render();
+      renderApp();
     } else {
       renderLogin();
     }
@@ -27,7 +27,7 @@ async function boot(){
   }
 }
 
-// Kullanıcı Profilini ve Detaylarını Veritabanından Çekme
+// 2. Profil Bilgilerini Veritabanından Çekme
 async function loadUserProfile() {
   if (!S.user) return;
   try {
@@ -47,18 +47,18 @@ async function loadUserProfile() {
   }
 }
 
-// Giriş ve Kayıt İşlemlerini Yöneten Fonksiyon
+// 3. Giriş ve Kayıt İşlemlerini Yöneten Ana Fonksiyon
 async function handleAuthAction(email, password, username = '', displayName = '', isRegister = false) {
   if (isRegister) {
-    // 1. Supabase Auth ile Kayıt Ol
+    // Kayıt Olma Adımı
     const { data, error } = await sb.auth.signUp({ email, password });
-    if (error) { 
-      alert('Kayıt hatası: ' + error.message); 
-      return; 
+    if (error) {
+      alert('Kayıt hatası: ' + error.message);
+      return;
     }
 
     if (data.user) {
-      // 2. profiles tablosuna kullanıcı adını ve görünen adı kaydet
+      // profiles tablosuna kullanıcı adı ve görünen adı kaydet
       const { error: profileErr } = await sb.from('profiles').insert([
         { id: data.user.id, username: username, display_name: displayName, photo: null }
       ]);
@@ -67,44 +67,52 @@ async function handleAuthAction(email, password, username = '', displayName = ''
         console.error('Profil kaydedilemedi:', profileErr.message);
         alert('Kayıt olundu ancak profil detayları eklenirken hata oluştu: ' + profileErr.message);
       } else {
-        // 3. social tablosuna başlangıç kaydı at
+        // social tablosuna başlangıç kaydı at
         await sb.from('social').insert([{ username: username, following: [], followers: [] }]);
         alert('Kayıt başarılı! Lütfen e-postanıza gelen onay linkine tıklayın.');
       }
     }
   } else {
-    // Giriş Yapma İşlemi
+    // Giriş Yapma Adımı
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) { 
-      alert('Giriş başarısız: ' + error.message); 
-      return; 
+    if (error) {
+      alert('Giriş başarısız: ' + error.message);
+      return;
     }
     
     S.user = data.user;
     await loadUserProfile();
-    render();
+    renderApp();
   }
 }
 
-// Arayüz Render Fonksiyonları (Örnek Yapı)
+// 4. Çıkış Yapma Fonksiyonu
+async function handleLogout() {
+  await sb.auth.signOut();
+  S.user = null;
+  S.profile = null;
+  renderLogin();
+}
+
+// 5. Arayüz Çizim Fonksiyonları (Örnek Yapı - Kendi HTML yapına göre özelleştirebilirsin)
 function renderLogin() {
   const app = document.getElementById('app') || document.body;
   app.innerHTML = `
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif;">
       <h2>Ritim Giriş / Kayıt</h2>
-      <div id="auth-form" style="display: flex; flex-direction: column; gap: 10px; width: 300px;">
+      <div style="display: flex; flex-direction: column; gap: 10px; width: 300px;">
         <input type="email" id="email" placeholder="E-posta" style="padding: 8px;" />
-        <input type="password" id="password" placeholder="Şifre (en az 6 karakter)" style="padding: 8px;" />
+        <input type="password" id="password" placeholder="Şifre" style="padding: 8px;" />
         <input type="text" id="username" placeholder="Kullanıcı Adı (Kayıt için)" style="padding: 8px;" />
         <input type="text" id="displayName" placeholder="Görünen Ad (Kayıt için)" style="padding: 8px;" />
-        <button onclick="handleLoginClick()" style="padding: 10px; background: #4f46e5; color: white; border: none; cursor: pointer;">Giriş Yap</button>
-        <button onclick="handleRegisterClick()" style="padding: 10px; background: #10b981; color: white; border: none; cursor: pointer;">Kayıt Ol</button>
+        <button onclick="onLoginClick()" style="padding: 10px; background: #4f46e5; color: white; border: none; cursor: pointer;">Giriş Yap</button>
+        <button onclick="onRegisterClick()" style="padding: 10px; background: #10b981; color: white; border: none; cursor: pointer;">Kayıt Ol</button>
       </div>
     </div>
   `;
 }
 
-function render() {
+function renderApp() {
   const app = document.getElementById('app') || document.body;
   const displayName = S.profile ? S.profile.display_name : (S.user ? S.user.email : 'Kullanıcı');
   const username = S.profile ? S.profile.username : '';
@@ -119,26 +127,19 @@ function render() {
   `;
 }
 
-// Buton Olayları Yardımcıları
-window.handleLoginClick = function() {
+// 6. Buton Olay Bağlantıları
+window.onLoginClick = function() {
   const email = document.getElementById('email').value;
   const pass = document.getElementById('password').value;
   handleAuthAction(email, pass, '', '', false);
 };
 
-window.handleRegisterClick = function() {
+window.onRegisterClick = function() {
   const email = document.getElementById('email').value;
   const pass = document.getElementById('password').value;
   const username = document.getElementById('username').value;
   const displayName = document.getElementById('displayName').value;
   handleAuthAction(email, pass, username, displayName, true);
-};
-
-window.handleLogout = async function() {
-  await sb.auth.signOut();
-  S.user = null;
-  S.profile = null;
-  renderLogin();
 };
 
 // Sayfa Yüklendiğinde Başlat
