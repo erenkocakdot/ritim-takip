@@ -117,15 +117,30 @@
 <body>
 <div id="root"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
-// Supabase Dashboard > Project Settings > API bölümündeki değerleri girin.
-// Anon key tarayıcıda kullanılmak üzere tasarlanmıştır; güvenliği supabase.sql içindeki RLS kuralları sağlar.
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-const supabaseReady = !SUPABASE_URL.startsWith('YOUR_') && !SUPABASE_ANON_KEY.startsWith('YOUR_');
-const db = supabaseReady ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const SUPABASE_URL = 'https://umgfogfuljroiqvkyugd.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_b4YGCNNdgl44Ue95MTr2Ew_Tc537pzV';
+
+const supabaseReady =
+  !SUPABASE_URL.startsWith('YOUR_') &&
+  !SUPABASE_ANON_KEY.startsWith('YOUR_');
+
+const db = supabaseReady
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
 const root = document.getElementById('root');
-const S = { user:null, authUser:null, view:'dashboard', date: todayStr(), chatWith:null, cache:{}, authMode:'login' };
+const S = {
+  user: null,
+  authUser: null,
+  view: 'dashboard',
+  date: todayStr(),
+  chatWith: null,
+  cache: {},
+  authMode: 'login'
+};
 
 function todayStr(d){ const x=d?new Date(d):new Date(); return x.toISOString().slice(0,10); }
 function fmtDateLabel(ds){
