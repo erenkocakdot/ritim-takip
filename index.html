@@ -33,6 +33,8 @@
 <style>
   body { background-color: #0F1A16; color: #EDEAE0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   ::-webkit-scrollbar { width: 0px; }
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:50;}
+  .modal{background:#16241F;border-radius:18px 18px 0 0;padding:18px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;border-top:1px solid #2A3D35;}
 </style>
 </head>
 <body class="bg-[#0F1A16] text-[#EDEAE0] min-h-screen flex flex-col items-center">
@@ -209,9 +211,7 @@
         console.error("Profil kaydedilemedi:", profileErr.message);
         alert("Kayıt olundu ancak profil kaydedilirken hata oluştu: " + profileErr.message);
       } else {
-        // 3. Insert into public.social table
-        await sb.from('social').insert([{ username: username, following: [], followers: [] }]);
-        alert("Kayıt başarılı! E-posta adresinize gelen onay linkine tıkladıktan sonra giriş yapabilirsiniz.");
+        alert("Kayıt başarılı! Giriş yapabilirsiniz.");
         renderLoginScreen();
       }
     }
@@ -267,10 +267,12 @@
   }
 
   function renderDashboardView(c) {
+    const displayName = S.profile ? S.profile.display_name : 'Kullanıcı';
+    const username = S.profile ? S.profile.username : '—';
     c.innerHTML = `
       <div class="bg-[#16241F] border border-[#2A3D35] rounded-2xl p-5 mb-4">
-        <h3 class="font-serif font-bold text-base mb-2">Hoş Geldin, ${S.profile ? S.profile.display_name : 'Kullanıcı'}!</h3>
-        <p class="text-xs text-[#8FA39A]">Kullanıcı Adı: @${S.profile ? S.profile.username : '—'}</p>
+        <h3 class="font-serif font-bold text-base mb-2">Hoş Geldin, ${displayName}!</h3>
+        <p class="text-xs text-[#8FA39A]">Kullanıcı Adı: @${username}</p>
       </div>
       <div class="bg-[#16241F] border border-[#2A3D35] rounded-2xl p-4 text-center">
         <p class="text-xs text-[#8FA39A]">Ritim günlük takip sisteminiz aktif ve çalışıyor.</p>
