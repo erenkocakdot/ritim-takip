@@ -275,6 +275,74 @@ function greeting(){
   if(h<18) return 'İyi günler';
   return 'İyi akşamlar';
 }
+  import { createClient } from '@supabase/supabase-js';
+
+export const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+  import { supabase } from './supabaseClient.js';
+
+export async function signUp({ email, password, username, displayName, height, weight, age, gender }) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        username,
+        display_name: displayName || username,
+        height: height ? String(height) : '',
+        weight: weight ? String(weight) : '',
+        age: age ? String(age) : '',
+        gender: gender || 'none',
+        avatar_emoji: '🙂'
+      },
+      emailRedirectTo: `${window.location.origin}/login`
+    }
+  });
+  if (error) throw error;
+  return data; // kullanıcı henüz oturumlu değil — e-postasını onaylaması lazım
+}
+
+export async function signIn(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data;
+}
+
+export async function signOut() {
+  await supabase.auth.signOut();
+}
+
+export async function getCurrentSession() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session;
+}
+
+export async function getMyProfile() {
+  const session = await getCurrentSession();
+  if (!session) return null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .single();
+  if (error) { console.error(error); return null; }
+  return data;
+}
+
+export async function updateMyProfile(fields) {
+  const session = await getCurrentSession();
+  if (!session) throw new Error('Oturum yok');
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(fields) // ör: { height: 178, weight: 70, age: 22, gender: 'erkek' }
+    .eq('id', session.user.id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
 function navBtn(id,ic,label){
   return `<button class="${S.view===id?'active':''}" onclick="switchView('${id}')"><span class="ic">${ic}</span>${label}</button>`;
 }
@@ -289,6 +357,97 @@ function renderView(){
   else if(S.view==='profile') renderProfile(c);
   else if(S.view==='admin') renderAdmin(c);
 }
+  import { signUp, signIn, getCurrentSession } from './auth.js';
+
+let mode = 'login'; // sayfa açılışında varsayılan GİRİŞ, kayıt değil
+
+async function boot() {
+  const session = await getCurrentSession();
+  if (session) { showApp(session); return; }
+  renderAuthScreen();
+}
+
+function renderAuthScreen() {
+  root.innerHTML = `
+    <div class="tabs">
+      <button onclick="setMode('login')" class="${mode==='login'?'active':''}">Giriş Yap</button>
+      <button onclick="setMode('signup')" class="${mode==='signup'?'active':''}">Kayıt Ol</button>
+    </div>
+    ${mode==='login' ? loginFormHtml() : signupFormHtml()}
+  `;
+}
+window.setMode = (m) => { mode = m; renderAuthScreen(); };
+
+async function handleLogin(email, password) {
+  try {
+    await signIn(email, password);
+    location.reload();
+  } catch (e) {
+    if (e.message.includes('Email not confirmed')) {
+      alert('Önce e-postana gelen onay linkine tıklaman gerekiyor.');
+    } else {
+      alert('Giriş başarısız: ' + e.message);
+    }
+  }
+  export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+  const { image_base64 } = req.body;
+  if (!image_base64) return res.status(400).json({ error: 'image_required' });
+
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: image_base64 } },
+            { type: 'text', text: 'Bu fotoğraftaki yemeği tanı ve tahmini kalorisini ver. Sadece şu JSON formatında yanıt ver, başka hiçbir şey yazma: {"food_name":"...","estimated_calories":number,"note":"kısa not"}' }
+          ]
+        }]
+      })
+    });
+    const data = await r.json();
+    if (!r.ok) return res.status(r.status).json({ error: data.error?.message || 'anthropic_error' });
+    const text = (data.content || []).map(b => b.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    res.status(200).json(JSON.parse(clean));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'estimation_failed' });
+  }
+}async function estimatePhotoCalories(file) {
+  const dataUrl = await resizeFileToDataUrl(file, 700, 0.65); // artifact'taki aynı fonksiyon
+  const base64 = dataUrl.split(',')[1];
+  const res = await fetch('/api/estimate-calories', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ image_base64: base64 })
+  });
+  if (!res.ok) throw new Error('Tahmin başarısız');
+  return await res.json(); // { food_name, estimated_calories, note }
+}
+}
+
+async function handleSignup(fields) {
+  try {
+    await signUp(fields);
+    alert('Kayıt tamam! E-postana gönderdiğimiz linke tıkla, sonra buradan giriş yapabilirsin.');
+    mode = 'login';
+    renderAuthScreen();
+  } catch (e) {
+    alert('Kayıt başarısız: ' + e.message);
+  }
+}
+
+boot();
 
 // ================= DASHBOARD =================
 async function loadDay(date){
