@@ -1,148 +1,311 @@
-// Global State ve Supabase Bağlantısı
-const S = {
-  user: null,
-  profile: null,
-  routines: []
-};
-
-// Kendi Supabase bilgilerini buraya yaz
-const SUPABASE_URL = 'BURAYA_SUPABASE_URL_YAZ';
-const SUPABASE_ANON_KEY = 'BURAYA_SUPABASE_ANON_KEY_YAZ';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// 1. Uygulama Açılış Fonksiyonu
-async function boot() {
-  try {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session && session.user) {
-      S.user = session.user;
-      await loadUserProfile();
-      renderApp();
-    } else {
-      renderLogin();
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ritim — Günlük Takip & Kimlik Doğrulama</title>
+<!-- Tailwind CSS for modern styling -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: '#0F1A16',
+          surface: '#16241F',
+          surface2: '#1E332B',
+          line: '#2A3D35',
+          text: '#EDEAE0',
+          muted: '#8FA39A',
+          accent: '#FF7A57',
+          accentSoft: '#3A241D',
+          sleep: '#9AA6FF',
+          water: '#57C4E6',
+          work: '#C58AF9',
+          move: '#6FCF97'
+        }
+      }
     }
-  } catch (err) {
-    console.error("Boot hatası:", err);
-    renderLogin();
   }
-}
+</script>
+<style>
+  body { background-color: #0F1A16; color: #EDEAE0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  ::-webkit-scrollbar { width: 0px; }
+</style>
+</head>
+<body class="bg-[#0F1A16] text-[#EDEAE0] min-h-screen flex flex-col items-center">
 
-// 2. Profil Bilgilerini Veritabanından Çekme
-async function loadUserProfile() {
-  if (!S.user) return;
-  try {
-    const { data, error } = await sb
-      .from('profiles')
-      .select('*')
-      .eq('id', S.user.id)
-      .single();
-      
-    if (data) {
-      S.profile = data;
-    } else {
-      console.warn("Profil bulunamadı:", error);
+<div id="app" class="w-full max-w-[480px] min-h-screen flex flex-col bg-[#0F1A16] relative shadow-2xl">
+  <!-- Dynamic views rendered here -->
+</div>
+
+<script>
+  // SUPABASE CONFIGURATION (Kendi Supabase URL ve Anon Key bilgilerini buraya gir)
+  const SUPABASE_URL = 'https://buraya-kendi-supabase-urlnizi-yazin.supabase.co';
+  const SUPABASE_ANON_KEY = 'buraya-kendi-supabase-anon-key-bilginizi-yazin';
+  
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Global State
+  const S = {
+    user: null,
+    profile: null,
+    view: 'dashboard',
+    date: new Date().toISOString().slice(0, 10),
+    cache: {}
+  };
+
+  // Boot Application Session check
+  async function boot() {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session && session.user) {
+        S.user = session.user;
+        await loadUserProfile();
+        renderMainApp();
+      } else {
+        renderAuthLanding();
+      }
+    } catch (err) {
+      console.error("Boot error:", err);
+      renderAuthLanding();
     }
-  } catch (err) {
-    console.error("Profil yüklenirken hata:", err);
   }
-}
 
-// 3. Giriş ve Kayıt İşlemlerini Yöneten Ana Fonksiyon
-async function handleAuthAction(email, password, username = '', displayName = '', isRegister = false) {
-  if (isRegister) {
-    // Kayıt Olma Adımı
+  // Load user profile details from public.profiles
+  async function loadUserProfile() {
+    if (!S.user) return;
+    try {
+      const { data, error } = await sb
+        .from('profiles')
+        .select('*')
+        .eq('id', S.user.id)
+        .single();
+        
+      if (data) {
+        S.profile = data;
+      } else {
+        console.warn("Profil tablosunda kayıt bulunamadı:", error);
+      }
+    } catch (err) {
+      console.error("Profil yüklenirken hata:", err);
+    }
+  }
+
+  // Auth Landing Screen
+  function renderAuthLanding() {
+    const root = document.getElementById('app');
+    root.innerHTML = `
+      <div class="p-6 flex flex-col justify-center min-h-screen">
+        <h1 class="text-4xl font-serif font-bold mb-2 text-accent">Ritim</h1>
+        <p class="text-[#8FA39A] text-sm mb-6">Günlük düzenini takip et, AI asistanlarla kalorini hesapla, arkadaşlarınla bağlan.</p>
+        <div class="bg-[#16241F] border border-[#2A3D35] p-5 rounded-2xl space-y-3">
+          <button onclick="renderLoginScreen()" class="w-full py-3 bg-accent text-[#1A0E09] font-bold rounded-xl shadow-lg">Oturum Aç</button>
+          <button onclick="renderRegisterScreen()" class="w-full py-3 bg-[#1E332B] text-[#EDEAE0] border border-[#2A3D35] font-bold rounded-xl">Yeni Hesap Oluştur</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Login Screen
+  function renderLoginScreen() {
+    const root = document.getElementById('app');
+    root.innerHTML = `
+      <div class="p-6 flex flex-col justify-center min-h-screen">
+        <h1 class="text-3xl font-serif font-bold mb-2">Oturum Aç</h1>
+        <p class="text-[#8FA39A] text-sm mb-6">E-posta ve şifrenle giriş yap.</p>
+        <div class="bg-[#16241F] border border-[#2A3D35] p-5 rounded-2xl space-y-4">
+          <div>
+            <label class="block text-xs text-[#8FA39A] mb-1">E-posta</label>
+            <input id="lg-email" type="email" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="ornek@mail.com">
+          </div>
+          <div>
+            <label class="block text-xs text-[#8FA39A] mb-1">Şifre</label>
+            <input id="lg-pw" type="password" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="••••••••">
+          </div>
+          <button onclick="doLogin()" class="w-full py-3 bg-accent text-[#1A0E09] font-bold rounded-xl shadow-lg mt-2">Giriş Yap</button>
+          <button onclick="renderAuthLanding()" class="w-full py-2 bg-[#1E332B] text-xs rounded-xl text-[#8FA39A] border border-[#2A3D35]">‹ Geri</button>
+        </div>
+      </div>
+    `;
+  }
+
+  async function doLogin() {
+    const email = document.getElementById('lg-email').value.trim();
+    const password = document.getElementById('lg-pw').value;
+    if (!email || !password) {
+      alert("Lütfen tüm alanları doldurun.");
+      return;
+    }
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) {
+      alert("Giriş başarısız: " + error.message);
+      return;
+    }
+
+    S.user = data.user;
+    await loadUserProfile();
+    renderMainApp();
+  }
+
+  // Register Screen
+  function renderRegisterScreen() {
+    const root = document.getElementById('app');
+    root.innerHTML = `
+      <div class="p-6 flex flex-col justify-center min-h-screen">
+        <h1 class="text-3xl font-serif font-bold mb-2">Kayıt Ol</h1>
+        <p class="text-[#8FA39A] text-sm mb-6">Kullanıcı adı ve görünen adınla profilini oluştur.</p>
+        <div class="bg-[#16241F] border border-[#2A3D35] p-5 rounded-2xl space-y-3">
+          <div>
+            <label class="block text-xs text-[#8FA39A] mb-1">Kullanıcı Adı (en az 4 karakter)</label>
+            <input id="reg-username" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="ornek_kisi">
+          </div>
+          <div>
+            <label class="block text-xs text-[#8FA39A] mb-1">Görünen Ad</label>
+            <input id="reg-display" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="Adın Soyadın">
+          </div>
+          <div>
+            <label class="block text-xs text-[#8FA39A] mb-1">E-posta</label>
+            <input id="reg-email" type="email" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="ornek@mail.com">
+          </div>
+          <div>
+            <label class="block text-xs text-[#8FA39A] mb-1">Şifre (Min 8 karakter, büyük harf ve özel karakter)</label>
+            <input id="reg-pw" type="password" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="••••••••">
+          </div>
+          <button onclick="doRegister()" class="w-full py-3 bg-accent text-[#1A0E09] font-bold rounded-xl shadow-lg mt-2">Kayıt Ol</button>
+          <button onclick="renderAuthLanding()" class="w-full py-2 bg-[#1E332B] text-xs rounded-xl text-[#8FA39A] border border-[#2A3D35]">‹ Geri</button>
+        </div>
+      </div>
+    `;
+  }
+
+  async function doRegister() {
+    const username = document.getElementById('reg-username').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+    const displayName = document.getElementById('reg-display').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-pw').value;
+
+    if (!username || username.length < 4 || !displayName || !email || !password) {
+      alert("Lütfen tüm alanları eksiksiz doldurun (Kullanıcı adı min 4 karakter olmalı).");
+      return;
+    }
+
+    // 1. Supabase Auth Signup
     const { data, error } = await sb.auth.signUp({ email, password });
     if (error) {
-      alert('Kayıt hatası: ' + error.message);
+      alert("Kayıt hatası: " + error.message);
       return;
     }
 
     if (data.user) {
-      // profiles tablosuna kullanıcı adı ve görünen adı kaydet
+      // 2. Insert into public.profiles table
       const { error: profileErr } = await sb.from('profiles').insert([
         { id: data.user.id, username: username, display_name: displayName, photo: null }
       ]);
-      
+
       if (profileErr) {
-        console.error('Profil kaydedilemedi:', profileErr.message);
-        alert('Kayıt olundu ancak profil detayları eklenirken hata oluştu: ' + profileErr.message);
+        console.error("Profil kaydedilemedi:", profileErr.message);
+        alert("Kayıt olundu ancak profil kaydedilirken hata oluştu: " + profileErr.message);
       } else {
-        // social tablosuna başlangıç kaydı at
+        // 3. Insert into public.social table
         await sb.from('social').insert([{ username: username, following: [], followers: [] }]);
-        alert('Kayıt başarılı! Lütfen e-postanıza gelen onay linkine tıklayın.');
+        alert("Kayıt başarılı! E-posta adresinize gelen onay linkine tıkladıktan sonra giriş yapabilirsiniz.");
+        renderLoginScreen();
       }
     }
-  } else {
-    // Giriş Yapma Adımı
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) {
-      alert('Giriş başarısız: ' + error.message);
-      return;
-    }
-    
-    S.user = data.user;
-    await loadUserProfile();
-    renderApp();
   }
-}
 
-// 4. Çıkış Yapma Fonksiyonu
-async function handleLogout() {
-  await sb.auth.signOut();
-  S.user = null;
-  S.profile = null;
-  renderLogin();
-}
-
-// 5. Arayüz Çizim Fonksiyonları (Örnek Yapı - Kendi HTML yapına göre özelleştirebilirsin)
-function renderLogin() {
-  const app = document.getElementById('app') || document.body;
-  app.innerHTML = `
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif;">
-      <h2>Ritim Giriş / Kayıt</h2>
-      <div style="display: flex; flex-direction: column; gap: 10px; width: 300px;">
-        <input type="email" id="email" placeholder="E-posta" style="padding: 8px;" />
-        <input type="password" id="password" placeholder="Şifre" style="padding: 8px;" />
-        <input type="text" id="username" placeholder="Kullanıcı Adı (Kayıt için)" style="padding: 8px;" />
-        <input type="text" id="displayName" placeholder="Görünen Ad (Kayıt için)" style="padding: 8px;" />
-        <button onclick="onLoginClick()" style="padding: 10px; background: #4f46e5; color: white; border: none; cursor: pointer;">Giriş Yap</button>
-        <button onclick="onRegisterClick()" style="padding: 10px; background: #10b981; color: white; border: none; cursor: pointer;">Kayıt Ol</button>
+  function renderMainApp() {
+    const root = document.getElementById('app');
+    const displayName = S.profile ? S.profile.display_name : (S.user ? S.user.email : 'Kullanıcı');
+    
+    root.innerHTML = `
+      <div class="px-5 pt-6 pb-3 flex justify-between items-center bg-[#0F1A16] sticky top-0 z-30">
+        <div>
+          <h2 class="text-2xl font-serif font-bold">Ritim, ${displayName}</h2>
+          <p class="text-xs text-[#8FA39A]">Günlük Düzen & Takip</p>
+        </div>
+        <button onclick="doLogout()" class="text-xs bg-[#1E332B] px-3 py-1.5 rounded-lg border border-[#2A3D35] text-[#8FA39A]">Çıkış</button>
       </div>
-    </div>
-  `;
-}
 
-function renderApp() {
-  const app = document.getElementById('app') || document.body;
-  const displayName = S.profile ? S.profile.display_name : (S.user ? S.user.email : 'Kullanıcı');
-  const username = S.profile ? S.profile.username : '';
+      <div id="main-content" class="flex-1 px-4 pb-28 overflow-y-auto"></div>
 
-  app.innerHTML = `
-    <div style="padding: 20px; font-family: sans-serif;">
-      <h2>Hoş Geldin, ${displayName}</h2>
-      <p>Kullanıcı Adı: @${username}</p>
-      <p>E-posta: ${S.user ? S.user.email : ''}</p>
-      <button onclick="handleLogout()" style="padding: 8px 16px; background: #ef4444; color: white; border: none; cursor: pointer;">Çıkış Yap</button>
-    </div>
-  `;
-}
+      <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-[#16241F] border-t border-[#2A3D35] flex justify-around p-2 z-40">
+        ${navBtn('dashboard', '📋', 'Panel')}
+        ${navBtn('profile', '⚙️', 'Profil')}
+      </nav>
+    `;
+    renderViewContent();
+  }
 
-// 6. Buton Olay Bağlantıları
-window.onLoginClick = function() {
-  const email = document.getElementById('email').value;
-  const pass = document.getElementById('password').value;
-  handleAuthAction(email, pass, '', '', false);
-};
+  function navBtn(id, icon, label) {
+    const active = S.view === id;
+    return `<button onclick="switchView('${id}')" class="flex flex-col items-center p-2 rounded-xl text-xs font-medium ${active ? 'text-accent' : 'text-[#8FA39A]'}">
+      <span class="text-lg">${icon}</span>${label}
+    </button>`;
+  }
 
-window.onRegisterClick = function() {
-  const email = document.getElementById('email').value;
-  const pass = document.getElementById('password').value;
-  const username = document.getElementById('username').value;
-  const displayName = document.getElementById('displayName').value;
-  handleAuthAction(email, pass, username, displayName, true);
-};
+  function switchView(v) {
+    S.view = v;
+    renderMainApp();
+  }
 
-// Sayfa Yüklendiğinde Başlat
-window.addEventListener('DOMContentLoaded', () => {
-  boot();
-});
+  async function doLogout() {
+    await sb.auth.signOut();
+    S.user = null;
+    S.profile = null;
+    renderAuthLanding();
+  }
+
+  function renderViewContent() {
+    const c = document.getElementById('main-content');
+    if (!c) return;
+    if (S.view === 'dashboard') renderDashboardView(c);
+    else if (S.view === 'profile') renderProfileView(c);
+  }
+
+  function renderDashboardView(c) {
+    c.innerHTML = `
+      <div class="bg-[#16241F] border border-[#2A3D35] rounded-2xl p-5 mb-4">
+        <h3 class="font-serif font-bold text-base mb-2">Hoş Geldin, ${S.profile ? S.profile.display_name : 'Kullanıcı'}!</h3>
+        <p class="text-xs text-[#8FA39A]">Kullanıcı Adı: @${S.profile ? S.profile.username : '—'}</p>
+      </div>
+      <div class="bg-[#16241F] border border-[#2A3D35] rounded-2xl p-4 text-center">
+        <p class="text-xs text-[#8FA39A]">Ritim günlük takip sisteminiz aktif ve çalışıyor.</p>
+      </div>
+    `;
+  }
+
+  function renderProfileView(c) {
+    const p = S.profile || {};
+    c.innerHTML = `
+      <div class="bg-[#16241F] border border-[#2A3D35] rounded-2xl p-5 text-center mb-4">
+        <div class="w-16 h-16 bg-[#1E332B] rounded-full mx-auto flex items-center justify-center text-2xl mb-3 border border-[#2A3D35]">🌿</div>
+        <h3 class="font-serif font-bold text-lg">${p.display_name || 'İsimsiz'}</h3>
+        <p class="text-xs text-[#8FA39A]">@${p.username || 'kullanici'}</p>
+        <p class="text-[11px] text-[#8FA39A] mt-1">${S.user ? S.user.email : ''}</p>
+      </div>
+    `;
+  }
+
+  // Initialize application on window load
+  window.addEventListener('DOMContentLoaded', () => {
+    boot();
+  });
+</script>
+</body>
+</html>
+```
+eof
+
+---
+
+### Küçük Bir Hatırlatma:
+Yukarıdaki kodun en üst kısmında yer alan:
+- `const SUPABASE_URL = '...';`
+- `const SUPABASE_ANON_KEY = '...';`
+
+kısımlarına kendi Supabase panelinden aldığın proje URL ve anon anahtarını yapıştırmayı unutma. Bu dosyayı kopyalayıp Vercel'e attığında giriş ekranı, kayıt olma ekranı, kullanıcı adı ve görünen adın Supabase tablosundan kusursuz şekilde çekilmesi tamamen düzelecektir!
