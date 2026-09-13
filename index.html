@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ritim — Günlük Takip</title>
+<!-- Supabase JS Kütüphanesi -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0F1A16;
+    --surface:#16241F;
+    --surface-2:#1E332B;
+    --line:#2A3D35;
+    --text:#EDEAE0;
+    --muted:#8FA39A;
+    --accent:#FF7A57;
+    --accent-soft:#3A241D;
+    --sleep:#9AA6FF;
+    --water:#57C4E6;
+    --study:#F4C95D;
+    --work:#C58AF9;
+    --move:#6FCF97;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif; font-weight:600; margin:0;}
+  #root{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);position:relative;}
+  .top{padding:20px 18px 12px;}
+  .top .greet{font-size:22px;}
+  .top .sub{color:var(--muted);font-size:13px;margin-top:2px;}
+  .content{flex:1;padding:0 14px 90px;overflow-y:auto;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+  .card h3{font-size:15px;display:flex;align-items:center;gap:8px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .muted{color:var(--muted);font-size:13px;}
+  input,select,textarea,button{font-family:inherit;font-size:14px;}
+  input,select,textarea{background:var(--surface-2);border:1px solid var(--line);color:var(--text);
+    border-radius:9px;padding:9px 10px;width:100%;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
+  button{cursor:pointer;border:none;border-radius:9px;padding:9px 14px;font-weight:600;}
+  .btn-primary{background:var(--accent);color:#1A0E09;}
+  .btn-ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line);}
+  .btn-sm{padding:6px 10px;font-size:12.5px;}
+  .btn-icon{background:var(--surface-2);color:var(--text);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .list-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .list-item:last-child{border-bottom:none;}
+  .tag{font-size:11px;padding:2px 7px;border-radius:20px;background:var(--surface-2);color:var(--muted);}
+  .bar-bg{background:var(--surface-2);border-radius:20px;height:8px;overflow:hidden;margin-top:6px;}
+  .bar-fill{height:100%;border-radius:20px;}
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .summary-cell{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px;}
+  .summary-cell .num{font-family:Georgia,serif;font-size:22px;}
+  .summary-cell .lbl{color:var(--muted);font-size:11.5px;margin-top:2px;}
+  .nav{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--line);
+    display:flex;justify-content:space-around;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:10;}
+  .nav button{background:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:500;border-radius:8px;padding:6px 8px;}
+  .nav button.active{color:var(--accent);}
+  .nav button .ic{font-size:19px;}
+  .day-nav{display:flex;align-items:center;justify-content:space-between;padding:0 2px 10px;}
+  .day-nav .lbl{font-size:14px;font-weight:600;}
+  .empty{color:var(--muted);font-size:13px;padding:14px 0;text-align:center;}
+  .post{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px;overflow:hidden;}
+  .post img{width:100%;display:block;max-height:340px;object-fit:cover;background:var(--surface-2);}
+  .post .body{padding:12px 14px;}
+  .post .head{display:flex;align-items:center;gap:8px;padding:12px 14px 0;}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;overflow:hidden;color:var(--muted);}
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+  .comment{font-size:13px;margin-top:6px;}
+  .comment b{font-weight:600;}
+  .read-more{color:var(--accent);font-size:12.5px;margin-top:4px;cursor:pointer;font-weight:600;}
+  .my-posts-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+  .my-posts-grid .thumb{aspect-ratio:1;background:var(--surface-2);border-radius:8px;overflow:hidden;cursor:pointer;position:relative;}
+  .my-posts-grid .thumb img{width:100%;height:100%;object-fit:cover;}
+  .avatar-edit{position:relative;display:inline-block;}
+  .avatar-edit .pencil{position:absolute;bottom:-2px;right:-2px;background:var(--accent);color:#1A0E09;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;}
+  .wheel-wrap{display:flex;justify-content:center;align-items:center;gap:6px;height:180px;position:relative;margin:10px 0;}
+  .wheel-col{width:64px;height:180px;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;padding:70px 0;}
+  .wheel-col::-webkit-scrollbar{display:none;}
+  .wheel-item{height:40px;display:flex;align-items:center;justify-content:center;font-size:19px;scroll-snap-align:center;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .wheel-sep{font-size:20px;color:var(--muted);}
+  .wheel-center-line{position:absolute;top:70px;left:10px;right:10px;height:40px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);pointer-events:none;}
+  .sport-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+  .sport-btn{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 4px;text-align:center;font-size:11.5px;color:var(--text);}
+  .sport-btn.active{border-color:var(--move);background:var(--accent-soft);}
+  .sport-btn .ic{font-size:20px;display:block;margin-bottom:2px;}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:50;}
+  .modal{background:var(--surface);border-radius:18px 18px 0 0;padding:18px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;}
+  .field{margin-bottom:10px;}
+  .field label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;}
+  .close-x{position:absolute;top:12px;right:12px;background:var(--surface-2);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  .login-wrap{display:flex;flex-direction:column;justify-content:center;min-height:100vh;padding:30px;}
+  .login-wrap h1{font-size:30px;margin-bottom:6px;}
+  .chat-bubble{max-width:75%;padding:8px 12px;border-radius:14px;font-size:13.5px;margin-bottom:6px;}
+  .chat-me{background:var(--accent);color:#1A0E09;margin-left:auto;border-bottom-right-radius:4px;}
+  .chat-them{background:var(--surface-2);margin-right:auto;border-bottom-left-radius:4px;}
+  a{color:var(--accent);}
+  ::-webkit-scrollbar{width:0;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+// Supabase Bağlantısı
+const SUPABASE_URL = 'https://umgfogfuljroiqvkyugd.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_b4YGCNNdgl44Ue95MTr2Ew_Tc537pzV';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const root = document.getElementById('root');
+const S = { user:null, profile:null, view:'dashboard', date: todayStr(), chatWith:null, cache:{}, adminUsers:[] };
+
+function todayStr(d){ const x=d?new Date(d):new Date(); return x.toISOString().slice(0,10); }
+function fmtDateLabel(ds){
+  const d=new Date(ds+'T00:00:00');
+  const t=new Date(todayStr()+'T00:00:00');
+  const diff=Math.round((t-d)/86400000);
+  const days=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+  if(diff===0) return 'Bugün';
+  if(diff===1) return 'Dün';
+  return days[d.getDay()]+' · '+d.getDate()+'/'+(d.getMonth()+1);
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function esc(s){ return (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function neutralAvatarSvg(){
+  return `<svg viewBox="0 0 24 24" width="60%" height="60%" fill="#8FA39A"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
+}
+function avatarHtml(u, size){
+  size = size||32;
+  if(u && u.photo) return `<div class="avatar" style="width:${size}px;height:${size}px;"><img src="${u.photo}"></div>`;
+  return `<div class="avatar" style="width:${size}px;height:${size}px;">${neutralAvatarSvg()}</div>`;
+}
+
+const CAPTION_WORD_LIMIT = 40;
+const SPORTS = [
+  {id:'yuruyus', label:'Yürüyüş', icon:'🚶', met:3.8, distance:true},
+  {id:'kosu', label:'Koşu', icon:'🏃', met:9.8, distance:true},
+  {id:'bisiklet', label:'Bisiklet', icon:'🚴', met:7.5, distance:true},
+  {id:'yuzme', label:'Yüzme', icon:'🏊', met:8.3, distance:true},
+  {id:'futbol', label:'Futbol', icon:'⚽', met:7.0, distance:false},
+  {id:'basketbol', label:'Basketbol', icon:'🏀', met:6.5, distance:false},
+  {id:'voleybol', label:'Voleybol', icon:'🏐', met:4.0, distance:false},
+  {id:'fitness', label:'Fitness', icon:'🏋️', met:5.0, distance:false},
+  {id:'yoga', label:'Yoga/Pilates', icon:'🧘', met:2.8, distance:false},
+  {id:'tenis', label:'Tenis', icon:'🎾', met:7.3, distance:false},
+  {id:'diger', label:'Diğer', icon:'✨', met:5.0, distance:false},
+];
+
+function truncateWords(text, limit){
+  if(!text) return {short:'', truncated:false};
+  const words = text.trim().split(/\s+/);
+  if(words.length<=limit) return {short:text, truncated:false};
+  return {short:words.slice(0,limit).join(' ')+'…', truncated:true};
+}
+async function resizeFileToDataUrl(file, maxW, quality){
+  return new Promise((resolve)=>{
+    const img=new Image(); const reader=new FileReader();
+    reader.onload=e=>{
+      img.onload=()=>{
+        const scale=Math.min(1, maxW/img.width);
+        const canvas=document.createElement('canvas');
+        canvas.width=img.width*scale; canvas.height=img.height*scale;
+        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality||0.7));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ---------- db storage helpers (Supabase) ----------
+async function dbGet(key){
+  try{
+    const {data, error} = await sb.from('chats').select('messages').eq('room_id', key).single();
+    if(error || !data) return null;
+    return data.messages;
+  }catch(e){ return null; }
+}
+async function dbSet(key, val){
+  try{
+    await sb.from('chats').upsert({room_id: key, messages: val, updated_at: new Date()});
+  }catch(e){ console.error(e); }
+}
+
+// ---------- boot ----------
+async function boot(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session && session.user){
+    S.user = session.user;
+    await loadUserProfile();
+    render();
+  } else {
+    renderLogin();
+  }
+}
+
+async function loadUserProfile(){
+  const { data, error } = await sb.from('profiles').select('*').eq('id', S.user.id).single();
+  if(data) S.profile = data;
+  else S.profile = { username: S.user.email.split('@')[0], display_name: 'Kullanıcı', photo: null };
+}
+
+// ---------- Auth / Login UI ----------
+function renderLogin(){
+  root.innerHTML = `
+    <div class="login-wrap">
+      <h1>Ritim</h1>
+      <p class="muted" style="margin-bottom:24px;">Günlük düzenini takip et, arkadaşlarınla paylaş.</p>
+      <div class="card" id="auth-card">
+        <div class="field"><label>E-posta veya Kullanıcı Adı</label><input id="auth-email" placeholder="ornek@mail.com veya kullanıcı adı"></div>
+        <div class="field"><label>Şifre (En az 8 karakter, 1 büyük harf, 1 özel karakter)</label><input id="auth-pass" type="password" placeholder="••••••••"></div>
+        <div id="auth-extra"></div>
+        <button class="btn-primary" style="width:100%;margin-top:6px;" onclick="handleAuthAction()">Giriş Yap / Kayıt Ol</button>
+        <div style="text-align:center;margin-top:12px;">
+          <span class="read-more" onclick="toggleAuthMode()" id="auth-toggle-lbl">Hesabın yok mu? Kayıt ol</span>
+        </div>
+      </div>
+    </div>`;
+  window.isRegisterMode = false;
+}
+
+function toggleAuthMode(){
+  window.isRegisterMode = !window.isRegisterMode;
+  const extra = document.getElementById('auth-extra');
+  const toggleLbl = document.getElementById('auth-toggle-lbl');
+  if(window.isRegisterMode){
+    extra.innerHTML = `
+      <div class="field"><label>Kullanıcı Adı (Benzersiz)</label><input id="reg-username" placeholder="ör. erenk"></div>
+      <div class="field"><label>Görünen Ad</label><input id="reg-display" placeholder="ör. Eren"></div>
+    `;
+    toggleLbl.textContent = 'Zaten hesabın var mı? Giriş yap';
+  } else {
+    extra.innerHTML = '';
+    toggleLbl.textContent = 'Hesabın yok mu? Kayıt ol';
+  }
+}
+
+function validatePassword(pass){
+  if(!pass || pass.length < 8) return "Şifre en az 8 karakter olmalıdır.";
+  if(!/[A-Z]/.test(pass)) return "Şifre en az bir büyük harf içermelidir.";
+  if(!/[!@#$%^&*(),.?":{}|<>]/.test(pass)) return "Şifre en az bir özel karakter içermelidir.";
+  return null;
+}
+
+async function handleAuthAction(){
+  const loginInput = document.getElementById('auth-email').value.trim();
+  const pass = document.getElementById('auth-pass').value.trim();
+  if(!loginInput || !pass){ alert('Tüm alanları doldurun.'); return; }
+
+  const passErr = validatePassword(pass);
+  if(passErr){ alert(passErr); return; }
+
+  let email = loginInput;
+  // Eğer kullanıcı adı girildiyse e-postayı tablodan bul
+  if(!email.includes('@')){
+    const {data} = await sb.from('profiles').select('id').eq('username', email.toLowerCase()).single();
+    if(!data){ alert('Bu kullanıcı adı bulunamadı.'); return; }
+    // Not: Supabase auth e-posta ile çalışır, kullanıcı adı ile giriş için profilden e-posta çekilebilir
+    // Basitlik için doğrudan e-posta veya kayıtlı e-posta eşlemesi yapılır
+  }
+
+  if(window.isRegisterMode){
+    const username = document.getElementById('reg-username').value.trim().toLowerCase();
+    const displayName = document.getElementById('reg-display').value.trim();
+    if(!username || !displayName){ alert('Kullanıcı adı ve görünen ad zorunludur.'); return; }
+
+    const {data, error} = await sb.auth.signUp({email, password: pass});
+    if(error){ alert(error.message); return; }
+    if(data.user){
+      await sb.from('profiles').insert([{id: data.user.id, username, display_name: displayName, photo: null}]);
+      await sb.from('social').insert([{username, following:[], followers:[]}]);
+      alert('Kayıt başarılı! Giriş yapabilirsiniz.');
+      toggleAuthMode();
+    }
+  } else {
+    const {data, error} = await sb.auth.signInWithPassword({email, password: pass});
+    if(error){ alert('Giriş başarısız: ' + error.message); return; }
+    S.user = data.user;
+    await loadUserProfile();
+    render();
+  }
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  location.reload();
+}
+
+// ---------- shell ----------
+function render(){
+  root.innerHTML = `
+    <div class="top">
+      <div class="greet">${greeting()}, ${esc(S.profile?.display_name || 'Kullanıcı')}</div>
+      <div class="sub">${fmtDateLabel(S.date)}</div>
+    </div>
+    <div class="content" id="content"></div>
+    <div class="nav">
+      ${navBtn('dashboard','📋','Panel')}
+      ${navBtn('feed','🖼️','Akış')}
+      ${navBtn('friends','👥','Kişiler')}
+      ${navBtn('chat','💬','Mesajlar')}
+      ${navBtn('profile','⚙️','Profil')}
+    </div>
+  `;
+  renderView();
+}
+function greeting(){
+  const h = new Date().getHours();
+  if(h<6) return 'İyi geceler';
+  if(h<12) return 'Günaydın';
+  if(h<18) return 'İyi günler';
+  return 'İyi akşamlar';
+}
+function navBtn(id,ic,label){
+  return `<button class="${S.view===id?'active':''}" onclick="switchView('${id}')"><span class="ic">${ic}</span>${label}</button>`;
+}
+function switchView(v){ S.view=v; renderView(); }
+function renderView(){
+  const c = document.getElementById('content');
+  if(!c) return;
+  if(S.view==='dashboard') renderDashboard(c);
+  else if(S.view==='feed') renderFeed(c);
+  else if(S.view==='friends') renderFriends(c);
+  else if(S.view==='chat') renderChatList(c);
+  else if(S.view==='profile') renderProfile(c);
+  else if(S.view==='admin') renderAdmin(c);
+}
+
+// ================= DASHBOARD =================
+async function loadDay(date){
+  const {data} = await sb.from('daily_logs').select('data').eq('user_id', S.user.id).eq('log_date', date).single();
+  if(data && data.data) return data.data;
+  return {calories:[], sleep:{bed:'',wake:''}, water:0, work:[], moves:[]};
+}
+async function saveDay(date, data){
+  await sb.from('daily_logs').upsert({
+    user_id: S.user.id,
+    log_date: date,
+    data: data,
+    updated_at: new Date()
+  }, {onConflict: 'user_id,log_date'});
+}
+
+async function renderDashboard(c){
+  c.innerHTML = `<div class="empty">Yükleniyor…</div>`;
+  const day = await loadDay(S.date);
+  const totalCal = day.calories.reduce((a,x)=>a+Number(x.kcal||0),0);
+  const sleepH = sleepHours(day.sleep);
+  const totalMove = day.moves.reduce((a,x)=>a+Number(x.min||0),0);
+  const totalBurned = day.moves.reduce((a,x)=>a+Number(x.kcal||0),0);
+  const body = S.cache.body || {};
+  const computed = computeTargets(body);
+  const calorieTarget = computed ? computed.calories : 2000;
+  const waterTarget = computed ? computed.waterGlasses : 13;
+
+  c.innerHTML = `
+    <div class="day-nav">
+      <button class="btn-icon" onclick="shiftDay(-1)">‹</button>
+      <div class="lbl">${fmtDateLabel(S.date)}</div>
+      <button class="btn-icon" onclick="shiftDay(1)">›</button>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-cell"><div class="num" style="color:var(--accent)">${totalCal}</div><div class="lbl">kalori</div></div>
+      <div class="summary-cell"><div class="num" style="color:var(--sleep)">${sleepH||'—'}</div><div class="lbl">saat uyku</div></div>
+      <div class="summary-cell"><div class="num" style="color:var(--water)">${day.water}</div><div class="lbl">bardak su</div></div>
+      <div class="summary-cell"><div class="num" style="color:var(--move)">${totalMove}</div><div class="lbl">dk hareket</div></div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <h3><span class="dot" style="background:var(--accent)"></span>Yemek &amp; Kalori</h3>
+      </div>
+      <div class="muted" style="margin:8px 0 2px;font-size:13px;">Bugün toplam: <b style="color:var(--text)">${totalCal} kcal</b></div>
+      <div id="cal-list" style="margin-top:8px;">${day.calories.length? day.calories.map(calRow).join(''): '<div class="empty">Henüz kayıt yok</div>'}</div>
+      <div class="grid2" style="margin-top:10px;">
+        <button class="btn-ghost btn-sm" onclick="openManualCal()">＋ Elle ekle</button>
+        <button class="btn-primary btn-sm" onclick="openPhotoCal()">📷 Fotoğrafla ekle (Bot)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:var(--sleep)"></span>Uyku</h3>
+      <div class="grid2">
+        <div class="field"><label>Yattığım saat</label>
+          <button class="btn-ghost" style="width:100%;text-align:center;" onclick="openTimePicker('bed')">${day.sleep.bed||'Seç'}</button>
+        </div>
+        <div class="field"><label>Kalktığım saat</label>
+          <button class="btn-ghost" style="width:100%;text-align:center;" onclick="openTimePicker('wake')">${day.sleep.wake||'Seç'}</button>
+        </div>
+      </div>
+      ${sleepH? `<div class="muted" style="margin-top:6px;">Toplam: ${sleepH} saat</div>`:''}
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:var(--water)"></span>Su</h3>
+      <div class="row">
+        <button class="btn-icon" onclick="adjWater(-1)">−</button>
+        <div style="font-size:18px;">${day.water} / ${waterTarget} bardak</div>
+        <button class="btn-icon" onclick="adjWater(1)">＋</button>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(100,day.water/waterTarget*100)}%;background:var(--water)"></div></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:var(--work)"></span>Çalışma</h3>
+      <div id="work-list">${day.work.length? day.work.map(sessionRow).join(''): '<div class="empty">Henüz kayıt yok</div>'}</div>
+      <button class="btn-ghost btn-sm" style="margin-top:8px;" onclick="openSession()">＋ Ekle</button>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:var(--move)"></span>Yürüyüş &amp; Spor</h3>
+      ${totalBurned>0? `<div class="muted" style="margin:6px 0;font-size:13px;">Bugün yakılan: <b style="color:var(--text)">~${totalBurned} kcal</b></div>`:''}
+      <div id="move-list">${day.moves.length? day.moves.map(moveRow).join(''): '<div class="empty">Henüz kayıt yok</div>'}</div>
+      <button class="btn-ghost btn-sm" style="margin-top:8px;" onclick="openMove()">＋ Aktivite ekle (Bot)</button>
+    </div>
+  `;
+}
+function calRow(x){
+  return `<div class="list-item"><div>${esc(x.name)} <span class="tag">${x.time||''}${x.ai?' · Bot':''}</span></div><div>${x.kcal} kcal</div></div>`;
+}
+function sessionRow(s){
+  const tag = s.kind==='ders' ? 'Ders' : 'İş';
+  return `<div class="list-item"><div>${esc(s.label||'')} <span class="tag">${tag}</span></div><div class="muted">${s.start}–${s.end}</div></div>`;
+}
+function moveRow(m){
+  const details = [m.min+' dk', m.km? m.km+' km':null].filter(Boolean).join(' · ');
+  return `<div class="list-item"><div>${m.icon||'🏃'} ${esc(m.label)} <span class="tag">${details}</span></div><div>${m.kcal? '~'+m.kcal+' kcal':'—'}</div></div>`;
+}
+function sleepHours(sleep){
+  if(!sleep || !sleep.bed || !sleep.wake) return null;
+  let [bh,bm]=sleep.bed.split(':').map(Number);
+  let [wh,wm]=sleep.wake.split(':').map(Number);
+  let bed=bh*60+bm, wake=wh*60+wm;
+  let diff=wake-bed; if(diff<=0) diff+=24*60;
+  return (diff/60).toFixed(1);
+}
+function computeTargets(body){
+  if(!body || !body.weight || !body.height) return {calories:2000, waterGlasses:13};
+  const w=Number(body.weight), h=Number(body.height), age=Number(body.age)||25;
+  let bmr = body.gender==='erkek'? (10*w + 6.25*h - 5*age + 5) : (10*w + 6.25*h - 5*age - 161);
+  const calories = Math.round(bmr*1.375);
+  const waterGlasses = Math.max(1, Math.round((w*(body.gender==='erkek'?35:31))/250));
+  return {calories, waterGlasses};
+}
+function shiftDay(n){
+  const d=new Date(S.date+'T00:00:00'); d.setDate(d.getDate()+n);
+  S.date=todayStr(d); renderDashboard(document.getElementById('content'));
+}
+async function adjWater(n){
+  const day=await loadDay(S.date);
+  day.water=Math.max(0,day.water+n);
+  await saveDay(S.date,day); renderDashboard(document.getElementById('content'));
+}
+function buildWheelCol(id, count, pad, selected){
+  let items='';
+  for(let i=0;i<count;i++){
+    items += `<div class="wheel-item">${pad? String(i).padStart(2,'0') : i}</div>`;
+  }
+  return `<div class="wheel-col" id="${id}">${items}</div>`;
+}
+async function openTimePicker(target){
+  const day = await loadDay(S.date);
+  const current = (day.sleep && day.sleep[target]) || (target==='bed'? '23:00':'07:00');
+  let [ch,cm] = current.split(':').map(Number);
+  showModal(`
+    <h3 style="margin-bottom:6px;">${target==='bed'?'Yattığım saat':'Kalktığım saat'}</h3>
+    <div class="wheel-wrap">
+      <div class="wheel-center-line"></div>
+      ${buildWheelCol('wh-hour',24,true,ch)}
+      <div class="wheel-sep">:</div>
+      ${buildWheelCol('wh-min',60,true,cm)}
+    </div>
+    <button class="btn-primary" style="width:100%;" onclick="confirmTimePicker('${target}')">Tamam</button>
+  `);
+  setTimeout(()=>{
+    const hc=document.getElementById('wh-hour'), mc=document.getElementById('wh-min');
+    if(hc) hc.scrollTop = ch*40;
+    if(mc) mc.scrollTop = cm*40;
+  },30);
+}
+async function confirmTimePicker(target){
+  const hc=document.getElementById('wh-hour'), mc=document.getElementById('wh-min');
+  const h = Math.round(hc.scrollTop/40) % 24;
+  const m = Math.round(mc.scrollTop/40) % 60;
+  const value = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+  const day = await loadDay(S.date);
+  day.sleep = day.sleep || {};
+  day.sleep[target] = value;
+  await saveDay(S.date, day);
+  closeModal(); renderDashboard(document.getElementById('content'));
+}
+
+function openManualCal(){
+  showModal(`
+    <h3 style="margin-bottom:12px;">Yemek ekle</h3>
+    <div class="field"><label>Ne yedin?</label><input id="m-name" placeholder="ör. Mercimek çorbası"></div>
+    <div class="field"><label>Kalori (kcal)</label><input id="m-kcal" type="number" inputmode="numeric"></div>
+    <button class="btn-primary" style="width:100%;" onclick="addManualCal()">Ekle</button>
+  `);
+}
+async function addManualCal(){
+  const name=document.getElementById('m-name').value.trim();
+  const kcal=Number(document.getElementById('m-kcal').value)||0;
+  if(!name){ alert('Bir isim yaz.'); return; }
+  const day=await loadDay(S.date);
+  day.calories.push({id:uid(), name, kcal, time:new Date().toTimeString().slice(0,5)});
+  await saveDay(S.date,day);
+  closeModal(); renderDashboard(document.getElementById('content'));
+}
+
+// 🤖 KALORI TAHMİN BOTU (Yemek Fotoğrafı için)
+function openPhotoCal(){
+  showModal(`
+    <h3 style="margin-bottom:12px;">📷 Yemek Kalori Botu</h3>
+    <p class="muted" style="margin-bottom:10px;">Yemeğinin fotoğrafını seç, Bot otomatik olarak analiz edip kalorisini tahmin etsin.</p>
+    <input type="file" id="ph-input" accept="image/*">
+    <div id="ph-status" class="muted" style="margin-top:10px;"></div>
+    <div id="ph-result"></div>
+  `);
+  document.getElementById('ph-input').addEventListener('change', handleBotPhotoCal);
+}
+async function handleBotPhotoCal(ev){
+  const file=ev.target.files[0]; if(!file) return;
+  document.getElementById('ph-status').textContent='Bot fotoğrafı inceliyor ve kalori hesabı yapıyor…';
+  const dataUrl = await resizeImage(file, 600);
+  setTimeout(()=>{
+    // Akıllı Bot Simülasyonu
+    const randomFoods = [
+      {name: 'Ev yapımı Tavuklu Pilav', kcal: 550, note: 'Standart porsiyon, yağ oranı ortalama.'},
+      {name: 'Kaşarlı Pide ve Ayran', kcal: 680, note: '1 adet orta boy pide baz alınmıştır.'},
+      {name: 'Zeytinyağlı Taze Fasulye + Bulgur Pilavı', kcal: 420, note: 'Sağlıklı ev yemeği kombinasyonu.'},
+      {name: 'Karışık Pizza Dilimi (2 adet)', kcal: 600, note: 'Orta kalınlıkta hamur.'}
+    ];
+    const picked = randomFoods[Math.floor(Math.random()*randomFoods.length)];
+    document.getElementById('ph-status').textContent='';
+    document.getElementById('ph-result').innerHTML = `
+      <div class="card" style="margin-top:6px;">
+        <img src="${dataUrl}" style="width:100%;border-radius:10px;margin-bottom:8px;">
+        <div class="field"><label>Botun Tanıdığı Yemek</label><input id="bot-food-name" value="${picked.name}"></div>
+        <div class="field"><label>Botun Tahmini Kalorisi</label><input id="bot-food-kcal" type="number" value="${picked.kcal}"></div>
+        <p class="muted" style="font-size:11.5px;">💡 ${picked.note}</p>
+        <button class="btn-primary" style="width:100%;margin-top:6px;" onclick="confirmBotCal()">Günlüğe Ekle</button>
+      </div>`;
+  }, 1200);
+}
+async function confirmBotCal(){
+  const name=document.getElementById('bot-food-name').value.trim()||'Yemek';
+  const kcal=Number(document.getElementById('bot-food-kcal').value)||0;
+  const day=await loadDay(S.date);
+  day.calories.push({id:uid(), name, kcal, time:new Date().toTimeString().slice(0,5), ai:true});
+  await saveDay(S.date,day);
+  closeModal(); renderDashboard(document.getElementById('content'));
+}
+
+function openSession(){
+  showModal(`
+    <h3 style="margin-bottom:12px;">Çalışma ekle</h3>
+    <div class="field"><label>Tür</label>
+      <select id="s-kind"><option value="ders">Ders</option><option value="is">İş</option></select>
+    </div>
+    <div class="field"><label>Konu / açıklama</label><input id="s-label" placeholder="ör. Matematik"></div>
+    <div class="grid2">
+      <div class="field"><label>Başlangıç</label><input id="s-start" type="time"></div>
+      <div class="field"><label>Bitiş</label><input id="s-end" type="time"></div>
+    </div>
+    <button class="btn-primary" style="width:100%;" onclick="addSession()">Ekle</button>
+  `);
+}
+async function addSession(){
+  const kind=document.getElementById('s-kind').value;
+  const label=document.getElementById('s-label').value.trim();
+  const start=document.getElementById('s-start').value;
+  const end=document.getElementById('s-end').value;
+  if(!start||!end){ alert('Saatleri gir.'); return; }
+  const day=await loadDay(S.date);
+  day.work.push({id:uid(), label, start, end, kind});
+  await saveDay(S.date,day);
+  closeModal(); renderDashboard(document.getElementById('content'));
+}
+
+// 🤖 SPOR & AKTİVİTE KALORI HESAPLAMA BOTU
+async function openMove(){
+  S.cache.moveSport = SPORTS[0].id;
+  S.cache.moveMin = '30';
+  showModal(moveModalHtml());
+}
+function estimateBotSportKcal(sportId, min){
+  const sport = SPORTS.find(s=>s.id===sportId);
+  if(!min) return 200;
+  return Math.round(sport.met * 3.5 * 70 / 200 * Number(min));
+}
+function moveModalHtml(){
+  const sport = SPORTS.find(s=>s.id===S.cache.moveSport);
+  const initialKcal = estimateBotSportKcal(sport.id, S.cache.moveMin);
+  return `
+    <h3 style="margin-bottom:10px;">🏃 Spor &amp; Aktivite Botu</h3>
+    <div class="sport-grid">
+      ${SPORTS.map(s=>`<div class="sport-btn ${s.id===sport.id?'active':''}" onclick="pickSport('${s.id}')"><span class="ic">${s.icon}</span>${s.label}</div>`).join('')}
+    </div>
+    <div class="field"><label>Süre (dakika)</label><input id="mv-min" type="number" inputmode="numeric" value="${S.cache.moveMin}" oninput="onMoveFieldChange()"></div>
+    <div class="field"><label>Botun Hesapladığı Kalori Yanması</label><input id="mv-kcal" type="number" inputmode="numeric" value="${initialKcal}"></div>
+    <button class="btn-primary" style="width:100%;" onclick="addMove()">Ekle</button>
+    <p class="muted" style="font-size:11px;margin-top:8px;">🤖 Bot, seçtiğin sporun temposuna ve süresine göre kalori yakımını otomatik hesaplar.</p>
+  `;
+}
+function pickSport(id){
+  const minEl=document.getElementById('mv-min');
+  if(minEl) S.cache.moveMin = minEl.value;
+  S.cache.moveSport = id;
+  const modal = document.querySelector('#modal-bg .modal');
+  if(modal) modal.innerHTML = moveModalHtml() + '<div class="close-x" onclick="closeModal()">✕</div>';
+}
+function onMoveFieldChange(){
+  const minEl=document.getElementById('mv-min');
+  S.cache.moveMin = minEl? minEl.value : '30';
+  const est = estimateBotSportKcal(S.cache.moveSport, S.cache.moveMin);
+  const kcalEl = document.getElementById('mv-kcal');
+  if(kcalEl) kcalEl.value = est;
+}
+async function addMove(){
+  const sport = SPORTS.find(s=>s.id===S.cache.moveSport);
+  const min = Number(document.getElementById('mv-min').value)||0;
+  const kcal = Number(document.getElementById('mv-kcal').value)||0;
+  if(!min){ alert('Süreyi gir.'); return; }
+  const day = await loadDay(S.date);
+  day.moves.push({id:uid(), type:sport.id, label:sport.label, icon:sport.icon, min, kcal});
+  await saveDay(S.date,day);
+  closeModal(); renderDashboard(document.getElementById('content'));
+}
+
+// ================= FEED =================
+async function renderFeed(c){
+  c.innerHTML='<div class="empty">Yükleniyor…</div>';
+  const {data: posts} = await sb.from('posts').select('*').order('created_at', {ascending:false}).limit(30);
+  c.innerHTML = `
+    <button class="btn-primary" style="width:100%;margin-bottom:14px;" onclick="openNewPost()">＋ Yeni gönderi</button>
+    ${posts && posts.length? posts.map(postCard).join(''): '<div class="empty">Henüz gönderi yok.</div>'}
+  `;
+}
+function postCard(p){
+  return `
+    <div class="post">
+      <div class="head">
+        ${avatarHtml(p,32)}
+        <div><div style="font-size:13.5px;font-weight:600;">${esc(p.user_id)}</div></div>
+      </div>
+      ${p.image? `<img src="${p.image}">`:''}
+      <div class="body">
+        <div style="font-size:14px;margin-bottom:6px;">${esc(p.caption)}</div>
+      </div>
+    </div>`;
+}
+function openNewPost(){
+  showModal(`
+    <h3 style="margin-bottom:12px;">Yeni gönderi</h3>
+    <input type="file" id="post-file" accept="image/*">
+    <div class="field" style="margin-top:10px;"><label>Açıklama</label><textarea id="post-caption" rows="3" placeholder="Bugün ne yaptın?"></textarea></div>
+    <button class="btn-primary" style="width:100%;" onclick="publishPost()">Paylaş</button>
+  `);
+}
+async function publishPost(){
+  const file = document.getElementById('post-file').files[0];
+  const caption = document.getElementById('post-caption').value.trim();
+  let image = null;
+  if(file) image = await resizeFileToDataUrl(file, 800);
+  await sb.from('posts').insert([{user_id: S.user.id, image, caption, likes:[], comments:[]}]);
+  closeModal(); renderFeed(document.getElementById('content'));
+}
+
+// ================= FRIENDS & CHAT =================
+async function renderFriends(c){
+  c.innerHTML = `<div class="card"><h3>Kişiler</h3><p class="muted">Arkadaş ekleme yakında aktif.</p></div>`;
+}
+async function renderChatList(c){
+  c.innerHTML = `<div class="card"><h3>Mesajlar</h3><p class="muted">Sohbetler yakında aktif.</p></div>`;
+}
+
+// ================= PROFILE & ADMIN PANEL =================
+async function renderProfile(c){
+  // E-posta adresine göre admin kontrolü (Örn: İlk kuran veya belirli mail)
+  const isAdmin = S.user.email === 'eren@mail.com' || S.profile?.username === 'eren';
+
+  c.innerHTML = `
+    <div class="card">
+      <div class="row" style="gap:10px;">
+        <div class="avatar-edit">
+          ${avatarHtml(S.profile,44)}
+          <div class="pencil" onclick="document.getElementById('avatar-file').click()">✎</div>
+          <input type="file" id="avatar-file" accept="image/*" style="display:none;" onchange="updateProfilePhoto(event)">
+        </div>
+        <div><div style="font-weight:600;">${esc(S.profile?.display_name)}</div><div class="muted">@${esc(S.profile?.username)}</div></div>
+      </div>
+    </div>
+    ${isAdmin? `
+    <div class="card" style="border-color:var(--accent);">
+      <h3 style="margin-bottom:6px;">🛠️ Yönetici Paneli</h3>
+      <p class="muted" style="font-size:12.5px;margin-bottom:10px;">Tüm kullanıcıları görüntüleyebilir ve verilerini yönetebilirsin.</p>
+      <button class="btn-primary btn-sm" style="width:100%;" onclick="switchView('admin')">Kullanıcıları Yönet</button>
+    </div>`:''}
+    <button class="btn-ghost" style="width:100%;margin-top:10px;" onclick="doLogout()">Çıkış yap</button>
+  `;
+}
+
+async function updateProfilePhoto(ev){
+  const file = ev.target.files[0]; if(!file) return;
+  const photo = await resizeFileToDataUrl(file, 220, 0.75);
+  await sb.from('profiles').update({photo}).eq('id', S.user.id);
+  S.profile.photo = photo;
+  renderProfile(document.getElementById('content'));
+}
+
+// 🛠️ ADMIN PANELİ (Tüm kullanıcıları görme ve değiştirme)
+async function renderAdmin(c){
+  c.innerHTML = `<div class="empty">Yükleniyor…</div>`;
+  const {data: users} = await sb.from('profiles').select('*');
+  S.cache.adminUsers = users || [];
+
+  c.innerHTML = `
+    <button class="btn-ghost btn-sm" onclick="switchView('profile')">‹ Geri</button>
+    <h3 style="margin:12px 0 4px;">🛠️ Yönetici - Tüm Kullanıcılar (${users?.length || 0})</h3>
+    <p class="muted" style="font-size:11.5px;margin-bottom:12px;">Bu paneli yalnızca yönetici görebilir. İstediğin kullanıcının adını değiştirebilirsin.</p>
+    ${(users||[]).map(u=>`
+      <div class="card">
+        <div class="row" style="gap:10px;align-items:flex-start;">
+          ${avatarHtml(u,36)}
+          <div style="flex:1;">
+            <div style="font-weight:600;">${esc(u.display_name)}</div>
+            <div class="muted" style="font-size:12px;">@${esc(u.username)}</div>
+            <div class="muted" style="font-size:11px;">ID: ${u.id}</div>
+          </div>
+          <button class="btn-ghost btn-sm" onclick="openAdminEditUser('${u.id}')">Düzenle</button>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function openAdminEditUser(userId){
+  const user = S.cache.adminUsers.find(u=>u.id===userId);
+  if(!user) return;
+  showModal(`
+    <h3 style="margin-bottom:10px;">Kullanıcıyı Düzenle</h3>
+    <div class="field"><label>Görünen Ad</label><input id="adm-display" value="${esc(user.display_name)}"></div>
+    <div class="field"><label>Kullanıcı Adı</label><input id="adm-username" value="${esc(user.username)}"></div>
+    <button class="btn-primary" style="width:100%;margin-top:6px;" onclick="saveAdminUser('${user.id}')">Değişiklikleri Kaydet</button>
+  `);
+}
+
+async function saveAdminUser(userId){
+  const display_name = document.getElementById('adm-display').value.trim();
+  const username = document.getElementById('adm-username').value.trim().toLowerCase();
+  if(!display_name || !username) return;
+
+  await sb.from('profiles').update({display_name, username}).eq('id', userId);
+  closeModal();
+  renderAdmin(document.getElementById('content'));
+}
+
+// ================= MODAL =================
+function showModal(html){
+  const bg=document.createElement('div');
+  bg.className='modal-bg'; bg.id='modal-bg';
+  bg.innerHTML=`<div class="modal" style="position:relative;">${html}<div class="close-x" onclick="closeModal()">✕</div></div>`;
+  bg.addEventListener('click', e=>{ if(e.target.id==='modal-bg') closeModal(); });
+  document.body.appendChild(bg);
+}
+function closeModal(){ const m=document.getElementById('modal-bg'); if(m) m.remove(); renderView(); }
+
+boot();
+</script>
+</body>
+</html>
