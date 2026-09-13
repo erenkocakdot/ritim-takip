@@ -194,7 +194,6 @@ async function boot(){
   const { data: { session } } = await sb.auth.getSession();
   if(session && session.user){
     S.user = session.user;
-    await loadUserProfile();
     render();
   } else {
     renderLogin();
