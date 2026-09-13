@@ -102,14 +102,13 @@
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-  // Kendi Supabase Bilgilerin:
+  // Doğru URL ve Publishable Key eklendi.
   const SUPABASE_URL = 'https://umgfogfuljroiqvkyugd.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_b4YGCNNdgl44Ue95MTr2Ew_Tc537pzV'; 
   
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  window.supabase = supabase; // Diğer scriptler erişebilsin diye window'a ekliyoruz
+  window.supabase = supabase;
 
-  // Sayfa yüklendiğinde ana mantığı başlat
   window.addEventListener('DOMContentLoaded', () => {
     if(window.bootApp) window.bootApp();
   });
@@ -146,7 +145,7 @@ window.bootApp = async function() {
     if (session && session.user) {
       S.user = session.user;
       await loadProfile();
-      renderApp(); // <-- "render" HATASI BURADA DÜZELTİLDİ
+      renderApp(); // <-- renderApp kullanılıyor, sorunsuz çalışacak.
     } else {
       renderAuthLanding();
     }
@@ -178,7 +177,7 @@ function renderAuthLanding() {
   root.innerHTML = `
     <div class="login-wrap">
       <h1>Ritim</h1>
-      <p class="subtitle">Günlük düzenini takip et, AI asistanlarla kalorini hesapla.</p>
+      <p class="subtitle">Günlük düzenini takip et, asistanlarla kalorini hesapla.</p>
       <div class="card" style="padding: 24px;">
         <button class="btn-primary" style="width:100%; margin-bottom:12px;" onclick="renderLogin()">Giriş Yap</button>
         <button class="btn-ghost" style="width:100%;" onclick="renderRegister()">Yeni Hesap Oluştur</button>
@@ -238,7 +237,7 @@ async function doLogin() {
     
     S.user = data.user;
     await loadProfile();
-    renderApp(); // <-- "render" HATASI BURADA DÜZELTİLDİ
+    renderApp(); // <-- Hata veren yer düzeltildi.
   } catch (error) {
     if(error.message.includes('Email not confirmed')) alert("Önce e-postanıza gelen onay linkine tıklayın.");
     else alert("Giriş başarısız: " + error.message);
@@ -265,7 +264,6 @@ async function doRegister() {
   if (error) return alert("Kayıt hatası: " + error.message);
 
   if (data.user) {
-    // Profil tablosuna kayıt
     const { error: profileErr } = await window.supabase.from('profiles').insert([
       { 
         id: data.user.id, 
@@ -343,7 +341,7 @@ function renderDashboard(c) {
   const totalMove = S.dayData.moves.reduce((a,x)=>a+Number(x.min||0),0);
 
   c.innerHTML = `
-    <div class="day-nav">
+    <div class="day-nav" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <button class="btn-icon" onclick="shiftDay(-1)">‹</button>
       <div class="lbl" style="font-weight:bold;">${fmtDateLabel(S.date)}</div>
       <button class="btn-icon" onclick="shiftDay(1)">›</button>
