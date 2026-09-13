@@ -214,10 +214,10 @@ function renderLogin(){
       <h1>Ritim</h1>
       <p class="muted" style="margin-bottom:24px;">Günlük düzenini takip et, arkadaşlarınla paylaş.</p>
       <div class="card" id="auth-card">
-        <div class="field"><label>E-posta veya Kullanıcı Adı</label><input id="auth-email" placeholder="ornek@mail.com veya kullanıcı adı"></div>
+        <div class="field" id="email-field-wrap"><label id="email-label">E-posta adresi</label><input id="auth-email" placeholder="ornek@mail.com"></div>
         <div class="field"><label>Şifre (En az 8 karakter, 1 büyük harf, 1 özel karakter)</label><input id="auth-pass" type="password" placeholder="••••••••"></div>
         <div id="auth-extra"></div>
-        <button class="btn-primary" style="width:100%;margin-top:6px;" onclick="handleAuthAction()">Giriş Yap / Kayıt Ol</button>
+        <button class="btn-primary" style="width:100%;margin-top:6px;" onclick="handleAuthAction()">Giriş Yap</button>
         <div style="text-align:center;margin-top:12px;">
           <span class="read-more" onclick="toggleAuthMode()" id="auth-toggle-lbl">Hesabın yok mu? Kayıt ol</span>
         </div>
@@ -230,23 +230,26 @@ function toggleAuthMode(){
   window.isRegisterMode = !window.isRegisterMode;
   const extra = document.getElementById('auth-extra');
   const toggleLbl = document.getElementById('auth-toggle-lbl');
+  const emailLbl = document.getElementById('email-label');
+  const emailInput = document.getElementById('auth-email');
+  const submitBtn = document.querySelector('#auth-card .btn-primary');
+
   if(window.isRegisterMode){
+    emailLbl.textContent = 'E-posta adresi (Gerçek mail adresin)';
+    emailInput.placeholder = 'ornek@mail.com';
     extra.innerHTML = `
       <div class="field"><label>Kullanıcı Adı (Benzersiz)</label><input id="reg-username" placeholder="ör. erenk"></div>
       <div class="field"><label>Görünen Ad</label><input id="reg-display" placeholder="ör. Eren"></div>
     `;
     toggleLbl.textContent = 'Zaten hesabın var mı? Giriş yap';
+    submitBtn.textContent = 'Kayıt Ol';
   } else {
+    emailLbl.textContent = 'E-posta veya Kullanıcı Adı';
+    emailInput.placeholder = 'ornek@mail.com veya kullanıcı adı';
     extra.innerHTML = '';
     toggleLbl.textContent = 'Hesabın yok mu? Kayıt ol';
+    submitBtn.textContent = 'Giriş Yap';
   }
-}
-
-function validatePassword(pass){
-  if(!pass || pass.length < 8) return "Şifre en az 8 karakter olmalıdır.";
-  if(!/[A-Z]/.test(pass)) return "Şifre en az bir büyük harf içermelidir.";
-  if(!/[!@#$%^&*(),.?":{}|<>]/.test(pass)) return "Şifre en az bir özel karakter içermelidir.";
-  return null;
 }
 
 async function handleAuthAction(){
@@ -258,13 +261,6 @@ async function handleAuthAction(){
   if(passErr){ alert(passErr); return; }
 
   let email = loginInput;
-  // Eğer kullanıcı adı girildiyse e-postayı tablodan bul
-  if(!email.includes('@')){
-    const {data} = await sb.from('profiles').select('id').eq('username', email.toLowerCase()).single();
-    if(!data){ alert('Bu kullanıcı adı bulunamadı.'); return; }
-    // Not: Supabase auth e-posta ile çalışır, kullanıcı adı ile giriş için profilden e-posta çekilebilir
-    // Basitlik için doğrudan e-posta veya kayıtlı e-posta eşlemesi yapılır
-  }
 
   if(window.isRegisterMode){
     const username = document.getElementById('reg-username').value.trim().toLowerCase();
@@ -276,10 +272,20 @@ async function handleAuthAction(){
     if(data.user){
       await sb.from('profiles').insert([{id: data.user.id, username, display_name: displayName, photo: null}]);
       await sb.from('social').insert([{username, following:[], followers:[]}]);
-      alert('Kayıt başarılı! Giriş yapabilirsiniz.');
+      alert('Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
       toggleAuthMode();
     }
   } else {
+    // Giriş yaparken kullanıcı adı girildiyse e-postayı tablodan bul
+    if(!email.includes('@')){
+      const {data: profileData} = await sb.from('profiles').select('id').eq('username', email.toLowerCase()).single();
+      if(!profileData){ alert('Bu kullanıcı adı bulunamadı.'); return; }
+      // Kullanıcı adının bağlı olduğu auth hesabını bulmak içinprofiles id'sini kullanabiliriz veya doğrudan e-posta isteyebiliriz.
+      // Pratik olması için giriş yaparken doğrudan e-posta adresini girmek en garantisidir.
+      alert('Giriş yaparken lütfen kayıt olduğunuz e-posta adresinizi yazın.');
+      return;
+    }
+
     const {data, error} = await sb.auth.signInWithPassword({email, password: pass});
     if(error){ alert('Giriş başarısız: ' + error.message); return; }
     S.user = data.user;
