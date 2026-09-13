@@ -1,95 +1,130 @@
-<div id="root"></div>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ritim — Günlük Takip</title>
+<style>
+  :root{
+    --bg:#0F1A16;
+    --surface:#16241F;
+    --surface-2:#1E332B;
+    --line:#2A3D35;
+    --text:#EDEAE0;
+    --muted:#8FA39A;
+    --accent:#FF7A57;
+    --accent-soft:#3A241D;
+    --sleep:#9AA6FF;
+    --water:#57C4E6;
+    --work:#C58AF9;
+    --move:#6FCF97;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:Georgia,serif; font-weight:600; margin:0;}
+  #root{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);position:relative;}
+  
+  /* Top Bar */
+  .top{padding:20px 18px 12px;}
+  .top .greet{font-size:22px;}
+  .top .sub{color:var(--muted);font-size:13px;margin-top:2px;}
+  
+  /* Content & Cards */
+  .content{flex:1;padding:0 14px 90px;overflow-y:auto;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+  .card h3{font-size:15px;display:flex;align-items:center;gap:8px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .muted{color:var(--muted);font-size:13px;}
+  
+  /* Inputs & Buttons */
+  input,select,textarea,button{font-family:inherit;font-size:14px;}
+  input,select,textarea{background:var(--surface-2);border:1px solid var(--line);color:var(--text);
+    border-radius:9px;padding:12px 10px;width:100%;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
+  button{cursor:pointer;border:none;border-radius:9px;padding:12px 14px;font-weight:600; transition: opacity 0.2s;}
+  button:active{opacity: 0.8;}
+  .btn-primary{background:var(--accent);color:#1A0E09;}
+  .btn-ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line);}
+  .btn-sm{padding:6px 10px;font-size:12.5px;}
+  .btn-icon{background:var(--surface-2);color:var(--text);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;}
+  
+  /* Grids & Lists */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .list-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .list-item:last-child{border-bottom:none;}
+  .tag{font-size:11px;padding:2px 7px;border-radius:20px;background:var(--surface-2);color:var(--muted);}
+  .empty{color:var(--muted);font-size:13px;padding:14px 0;text-align:center;}
+  
+  /* Progress Bars */
+  .bar-bg{background:var(--surface-2);border-radius:20px;height:8px;overflow:hidden;margin-top:6px;}
+  .bar-fill{height:100%;border-radius:20px; transition: width 0.3s ease;}
+  
+  /* Summary Stats */
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .summary-cell{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px;}
+  .summary-cell .num{font-family:Georgia,serif;font-size:22px;}
+  .summary-cell .lbl{color:var(--muted);font-size:11.5px;margin-top:2px;}
+  
+  /* Navigation */
+  .nav{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--line);
+    display:flex;justify-content:space-around;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:30;}
+  .nav button{background:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:500;border-radius:8px;padding:6px 8px;}
+  .nav button.active{color:var(--accent);}
+  .nav button .ic{font-size:19px;}
+  
+  /* Auth / Login Wrappers */
+  .login-wrap{display:flex;flex-direction:column;justify-content:center;min-height:100vh;padding:30px;}
+  .login-wrap h1{font-size:36px;margin-bottom:6px;color:var(--accent);text-align:center;}
+  .login-wrap .subtitle{text-align:center; color:var(--muted); margin-bottom:24px;}
+  .field{margin-bottom:12px;}
+  .field label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;}
+  
+  /* Modals */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center;z-index:50;}
+  .modal{background:var(--surface);border-radius:18px 18px 0 0;padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto; border-top:1px solid var(--line);}
+  .close-x{position:absolute;top:12px;right:12px;background:var(--surface-2);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  
+  ::-webkit-scrollbar{width:0;}
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="login-wrap">
+    <h1>Ritim</h1>
+    <p class="subtitle">Uygulama yükleniyor...</p>
+  </div>
+</div>
 
-<!-- Initialize Supabase and Modules -->
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-  // --- SUPABASE CONFIGURATION ---
-  // Replace these with your actual Supabase URL and Anon Key
+  // SİZİN VERDİĞİNİZ BİREBİR GERÇEK SUPABASE BİLGİLERİ
   const SUPABASE_URL = 'https://umgfogfuljroiqvkyugd.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_b4YGCNNdgl44Ue95MTr2Ew_Tc537pzV'; 
   
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  window.supabaseClient = supabase; // Make it globally accessible for the rest of the script
+  window.supabase = supabase; // Diğer scriptler erişebilsin diye window'a ekliyoruz
 
-  // ================= AUTH LOGIC (auth.js) =================
-  async function signUp({ email, password, username, displayName, height, weight, age, gender }) {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username,
-          display_name: displayName || username,
-          height: height ? String(height) : '',
-          weight: weight ? String(weight) : '',
-          age: age ? String(age) : '',
-          gender: gender || 'none',
-          avatar_emoji: '🙂'
-        },
-        emailRedirectTo: `${window.location.origin}`
-      }
-    });
-    if (error) throw error;
-    return data;
-  }
-  window.authSignUp = signUp;
-
-  async function signIn(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return data;
-  }
-  window.authSignIn = signIn;
-
-  async function signOut() {
-    await supabase.auth.signOut();
-  }
-  window.authSignOut = signOut;
-
-  async function getCurrentSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
-  }
-  window.getCurrentSession = getCurrentSession;
-
-  async function getMyProfile() {
-    const session = await getCurrentSession();
-    if (!session) return null;
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
-    if (error) { console.error("Profil alınamadı:", error); return null; }
-    return data;
-  }
-  window.getMyProfile = getMyProfile;
-
-  async function updateMyProfile(fields) {
-    const session = await getCurrentSession();
-    if (!session) throw new Error('Oturum yok');
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(fields)
-      .eq('id', session.user.id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  }
-  window.updateMyProfile = updateMyProfile;
-
-  // Boot the app after defining modules
-  if (typeof window.startApp === 'function') {
-      window.startApp();
-  }
+  // Sayfa yüklendiğinde ana mantığı başlat
+  window.addEventListener('DOMContentLoaded', () => {
+    if(window.bootApp) window.bootApp();
+  });
 </script>
 
 <script>
 const root = document.getElementById('root');
-const S = { user:null, profile:null, view:'dashboard', date: todayStr(), chatWith:null, cache:{} };
-let authMode = 'login'; // login or signup
+const S = { 
+  user: null, 
+  profile: null, 
+  view: 'dashboard', 
+  date: todayStr(), 
+  authMode: 'landing',
+  dayData: { calories: [], water: 0, sleep: { bed: '', wake: '' }, work: [], moves: [] } 
+};
 
 function todayStr(d){ const x=d?new Date(d):new Date(); return x.toISOString().slice(0,10); }
 function fmtDateLabel(ds){
@@ -104,341 +139,293 @@ function fmtDateLabel(ds){
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function esc(s){ return (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-// ================= BOOT & AUTH (authScreen.js) =================
-// Called from the module script above once it's loaded
-window.startApp = async function() {
-    try {
-        const session = await window.getCurrentSession();
-        if (session) {
-            S.user = session.user;
-            S.profile = await window.getMyProfile();
-            render();
-        } else {
-            renderAuthScreen();
-        }
-    } catch (e) {
-        console.error("Boot error:", e);
-        renderAuthScreen();
-    }
-}
-
-function renderAuthScreen() {
-  root.innerHTML = `
-    <div class="login-wrap">
-      <h1 style="text-align:center; color:var(--accent);">Ritim</h1>
-      <p class="muted" style="text-align:center; margin-bottom:24px;">Günlük Takip & Sosyal Ağ</p>
-      
-      <div style="display:flex; gap:10px; margin-bottom:16px;">
-        <button class="${authMode==='login'?'btn-primary':'btn-ghost'}" style="flex:1;" onclick="setAuthMode('login')">Giriş Yap</button>
-        <button class="${authMode==='signup'?'btn-primary':'btn-ghost'}" style="flex:1;" onclick="setAuthMode('signup')">Kayıt Ol</button>
-      </div>
-
-      <div class="card" id="auth-form-container">
-        ${authMode === 'login' ? loginFormHtml() : signupFormHtml()}
-      </div>
-    </div>
-  `;
-}
-
-function setAuthMode(m) {
-    authMode = m;
-    renderAuthScreen();
-}
-
-function loginFormHtml() {
-  return `
-    <div class="field"><label>E-posta</label><input id="li-email" type="email" placeholder="ornek@mail.com"></div>
-    <div class="field"><label>Şifre</label><input id="li-pass" type="password" placeholder="••••••••"></div>
-    <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="handleLogin()">Giriş Yap</button>
-  `;
-}
-
-function signupFormHtml() {
-  return `
-    <div class="field"><label>E-posta</label><input id="su-email" type="email" placeholder="ornek@mail.com"></div>
-    <div class="field"><label>Şifre</label><input id="su-pass" type="password" placeholder="En az 6 karakter"></div>
-    <div class="field"><label>Kullanıcı adı</label><input id="su-username" placeholder="en az 4 karakter"></div>
-    <div class="field"><label>Görünen ad</label><input id="su-display" placeholder="Adın Soyadın"></div>
-    <div class="grid2">
-        <div class="field"><label>Boy (cm)</label><input id="su-height" type="number" placeholder="175"></div>
-        <div class="field"><label>Kilo (kg)</label><input id="su-weight" type="number" placeholder="70"></div>
-    </div>
-    <div class="grid2">
-        <div class="field"><label>Yaş</label><input id="su-age" type="number" placeholder="25"></div>
-        <div class="field"><label>Cinsiyet</label>
-            <select id="su-gender">
-            <option value="none" selected>Belirtme</option>
-            <option value="erkek">Erkek</option>
-            <option value="kadin">Kadın</option>
-            </select>
-        </div>
-    </div>
-    <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="handleSignup()">Kayıt Ol</button>
-  `;
-}
-
-async function handleLogin() {
-  const email = document.getElementById('li-email').value.trim();
-  const password = document.getElementById('li-pass').value;
+window.bootApp = async function() {
   try {
-    const { session } = await window.authSignIn(email, password);
-    S.user = session.user;
-    S.profile = await window.getMyProfile();
-    render();
-  } catch (e) {
-    if (e.message.includes('Email not confirmed')) {
-      alert('Önce e-postana gelen onay linkine tıklaman gerekiyor.');
+    const { data: { session } } = await window.supabase.auth.getSession();
+    if (session && session.user) {
+      S.user = session.user;
+      await loadProfile();
+      renderApp();
     } else {
-      alert('Giriş başarısız: ' + e.message);
+      renderAuthLanding();
     }
-  }
-}
-
-async function handleSignup() {
-  const username = document.getElementById('su-username').value.trim();
-  if (username.length < 4) { alert('Kullanıcı adı en az 4 karakter olmalı.'); return; }
-  
-  const fields = {
-    email: document.getElementById('su-email').value.trim(),
-    password: document.getElementById('su-pass').value,
-    username,
-    displayName: document.getElementById('su-display').value.trim(),
-    height: document.getElementById('su-height').value,
-    weight: document.getElementById('su-weight').value,
-    age: document.getElementById('su-age').value,
-    gender: document.getElementById('su-gender').value
-  };
-
-  try {
-    await window.authSignUp(fields);
-    alert('Kayıt tamam! Lütfen e-postanıza gönderdiğimiz onay linkine tıklayın, ardından Giriş Yapabilirsiniz.');
-    setAuthMode('login');
-  } catch (e) {
-    alert('Kayıt başarısız: ' + e.message);
-  }
-}
-
-async function doLogout(){
-  await window.authSignOut();
-  S.user = null;
-  S.profile = null;
-  renderAuthScreen();
-}
-
-  async function loadUserProfile() {
-    if (!S.user) return;
-    try {
-      const { data, error } = await sb
-        .from('profiles')
-        .select('*')
-        .eq('id', S.user.id)
-        .single();
-        
-      if (data) {
-        S.profile = data;
-      } else {
-        console.warn("Profil bulunamadı:", error);
-      }
-    } catch (err) {
-      console.error("Profil yüklenirken hata:", err);
-    }
-  }
-
-  function renderAuthLanding() {
-    const root = document.getElementById('app');
-    root.innerHTML = `
-      <div class="p-6 flex flex-col justify-center min-h-screen">
-        <h1 class="text-4xl font-serif font-bold mb-2 text-accent">Ritim</h1>
-        <p class="text-[#8FA39A] text-sm mb-6">Günlük düzenini takip et, AI asistanlarla kalorini hesapla, arkadaşlarınla bağlan.</p>
-        <div class="bg-[#16241F] border border-[#2A3D35] p-5 rounded-2xl space-y-3">
-          <button onclick="renderLoginScreen()" class="w-full py-3 bg-accent text-[#1A0E09] font-bold rounded-xl shadow-lg">Oturum Aç</button>
-          <button onclick="renderRegisterScreen()" class="w-full py-3 bg-[#1E332B] text-[#EDEAE0] border border-[#2A3D35] font-bold rounded-xl">Yeni Hesap Oluştur</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderLoginScreen() {
-    const root = document.getElementById('app');
-    root.innerHTML = `
-      <div class="p-6 flex flex-col justify-center min-h-screen">
-        <h1 class="text-3xl font-serif font-bold mb-2">Oturum Aç</h1>
-        <p class="text-[#8FA39A] text-sm mb-6">E-posta ve şifrenle giriş yap.</p>
-        <div class="bg-[#16241F] border border-[#2A3D35] p-5 rounded-2xl space-y-4">
-          <div>
-            <label class="block text-xs text-[#8FA39A] mb-1">E-posta</label>
-            <input id="lg-email" type="email" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="ornek@mail.com">
-          </div>
-          <div>
-            <label class="block text-xs text-[#8FA39A] mb-1">Şifre</label>
-            <input id="lg-pw" type="password" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="••••••••">
-          </div>
-          <button onclick="doLogin()" class="w-full py-3 bg-accent text-[#1A0E09] font-bold rounded-xl shadow-lg mt-2">Giriş Yap</button>
-          <button onclick="renderAuthLanding()" class="w-full py-2 bg-[#1E332B] text-xs rounded-xl text-[#8FA39A] border border-[#2A3D35]">‹ Geri</button>
-        </div>
-      </div>
-    `;
-  }
-
-  async function doLogin() {
-    const email = document.getElementById('lg-email').value.trim();
-    const password = document.getElementById('lg-pw').value;
-    if (!email || !password) {
-      alert("Lütfen tüm alanları doldurun.");
-      return;
-    }
-
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) {
-      alert("Giriş başarısız: " + error.message);
-      return;
-    }
-
-    S.user = data.user;
-    await loadUserProfile();
-    renderMainApp();
-  }
-
-  function renderRegisterScreen() {
-    const root = document.getElementById('app');
-    root.innerHTML = `
-      <div class="p-6 flex flex-col justify-center min-h-screen">
-        <h1 class="text-3xl font-serif font-bold mb-2">Kayıt Ol</h1>
-        <p class="text-[#8FA39A] text-sm mb-6">Kullanıcı adı ve görünen adınla profilini oluştur.</p>
-        <div class="bg-[#16241F] border border-[#2A3D35] p-5 rounded-2xl space-y-3">
-          <div>
-            <label class="block text-xs text-[#8FA39A] mb-1">Kullanıcı Adı (en az 4 karakter)</label>
-            <input id="reg-username" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="ornek_kisi">
-          </div>
-          <div>
-            <label class="block text-xs text-[#8FA39A] mb-1">Görünen Ad</label>
-            <input id="reg-display" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="Adın Soyadın">
-          </div>
-          <div>
-            <label class="block text-xs text-[#8FA39A] mb-1">E-posta</label>
-            <input id="reg-email" type="email" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="ornek@mail.com">
-          </div>
-          <div>
-            <label class="block text-xs text-[#8FA39A] mb-1">Şifre (Min 6 karakter)</label>
-            <input id="reg-pw" type="password" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="••••••••">
-          </div>
-          <button onclick="doRegister()" class="w-full py-3 bg-accent text-[#1A0E09] font-bold rounded-xl shadow-lg mt-2">Kayıt Ol</button>
-          <button onclick="renderAuthLanding()" class="w-full py-2 bg-[#1E332B] text-xs rounded-xl text-[#8FA39A] border border-[#2A3D35]">‹ Geri</button>
-        </div>
-      </div>
-    `;
-  }
-
-  async function doRegister() {
-    const username = document.getElementById('reg-username').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
-    const displayName = document.getElementById('reg-display').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-pw').value;
-
-    if (!username || username.length < 4 || !displayName || !email || !password) {
-      alert("Lütfen tüm alanları eksiksiz doldurun (Kullanıcı adı min 4 karakter).");
-      return;
-    }
-
-    const { data, error } = await sb.auth.signUp({ email, password });
-    if (error) {
-      alert("Kayıt hatası: " + error.message);
-      return;
-    }
-
-    if (data.user) {
-      const { error: profileErr } = await sb.from('profiles').insert([
-        { id: data.user.id, username: username, display_name: displayName, photo: null }
-      ]);
-
-      if (profileErr) {
-        console.error("Profil kaydedilemedi:", profileErr.message);
-        alert("Kayıt olundu ancak profil kaydedilirken hata oluştu: " + profileErr.message);
-      } else {
-        alert("Kayıt başarılı! Giriş yapabilirsiniz.");
-        renderLoginScreen();
-      }
-    }
-  }
-
-  function renderMainApp() {
-    const root = document.getElementById('app');
-    const displayName = S.profile ? S.profile.display_name : (S.user ? S.user.email : 'Kullanıcı');
-    
-    root.innerHTML = `
-      <div class="px-5 pt-6 pb-3 flex justify-between items-center bg-[#0F1A16] sticky top-0 z-30">
-        <div>
-          <h2 class="text-2xl font-serif font-bold">Ritim, ${displayName}</h2>
-          <p class="text-xs text-[#8FA39A]">Günlük Düzen & Takip</p>
-        </div>
-        <button onclick="doLogout()" class="text-xs bg-[#1E332B] px-3 py-1.5 rounded-lg border border-[#2A3D35] text-[#8FA39A]">Çıkış</button>
-      </div>
-
-      <div id="main-content" class="flex-1 px-4 pb-28 overflow-y-auto"></div>
-
-      <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-[#16241F] border-t border-[#2A3D35] flex justify-around p-2 z-40">
-        ${navBtn('dashboard', '📋', 'Panel')}
-        ${navBtn('profile', '⚙️', 'Profil')}
-      </nav>
-    `;
-    renderViewContent();
-  }
-
-  function navBtn(id, icon, label) {
-    const active = S.view === id;
-    return `<button onclick="switchView('${id}')" class="flex flex-col items-center p-2 rounded-xl text-xs font-medium ${active ? 'text-accent' : 'text-[#8FA39A]'}">
-      <span class="text-lg">${icon}</span>${label}
-    </button>`;
-  }
-
-  function switchView(v) {
-    S.view = v;
-    renderMainApp();
-  }
-
-  async function doLogout() {
-    await sb.auth.signOut();
-    S.user = null;
-    S.profile = null;
+  } catch (err) {
+    console.error("Boot Hatası:", err);
     renderAuthLanding();
   }
+}
 
-  function renderViewContent() {
-    const c = document.getElementById('main-content');
-    if (!c) return;
-    if (S.view === 'dashboard') renderDashboardView(c);
-    else if (S.view === 'profile') renderProfileView(c);
+async function loadProfile() {
+  if (!S.user) return;
+  const { data, error } = await window.supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', S.user.id)
+    .single();
+  
+  if (data) {
+    S.profile = data;
+  } else if (error && error.code !== 'PGRST116') {
+    console.error("Profil çekilemedi:", error.message);
+  }
+}
+
+function renderAuthLanding() {
+  S.authMode = 'landing';
+  root.innerHTML = `
+    <div class="login-wrap">
+      <h1>Ritim</h1>
+      <p class="subtitle">Günlük düzenini takip et, AI asistanlarla kalorini hesapla, arkadaşlarınla bağlan.</p>
+      <div class="card" style="padding: 24px;">
+        <button class="btn-primary" style="width:100%; margin-bottom:12px;" onclick="renderLogin()">Giriş Yap</button>
+        <button class="btn-ghost" style="width:100%;" onclick="renderRegister()">Yeni Hesap Oluştur</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderLogin() {
+  S.authMode = 'login';
+  root.innerHTML = `
+    <div class="login-wrap">
+      <h1>Oturum Aç</h1>
+      <p class="subtitle">E-posta ve şifrenle giriş yap.</p>
+      <div class="card" style="padding: 20px;">
+        <div class="field"><label>E-posta</label><input id="li-email" type="email" placeholder="ornek@mail.com"></div>
+        <div class="field"><label>Şifre</label><input id="li-pass" type="password" placeholder="••••••••"></div>
+        <button class="btn-primary" style="width:100%; margin-top:8px;" onclick="doLogin()">Giriş Yap</button>
+        <button class="btn-ghost" style="width:100%; margin-top:12px;" onclick="renderAuthLanding()">‹ Geri</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderRegister() {
+  S.authMode = 'register';
+  root.innerHTML = `
+    <div class="login-wrap">
+      <h1>Kayıt Ol</h1>
+      <p class="subtitle">Profilini oluştur ve takibe başla.</p>
+      <div class="card" style="padding: 20px;">
+        <div class="field"><label>Kullanıcı Adı (en az 4 karakter)</label><input id="su-username" placeholder="ornek_kisi"></div>
+        <div class="field"><label>Görünen Ad</label><input id="su-display" placeholder="Adın Soyadın"></div>
+        <div class="field"><label>E-posta</label><input id="su-email" type="email" placeholder="ornek@mail.com"></div>
+        <div class="field"><label>Şifre (Min 6 karakter)</label><input id="su-pass" type="password" placeholder="••••••••"></div>
+        
+        <div class="grid2">
+          <div class="field"><label>Boy (cm)</label><input id="su-height" type="number" placeholder="175"></div>
+          <div class="field"><label>Kilo (kg)</label><input id="su-weight" type="number" placeholder="70"></div>
+        </div>
+        
+        <button class="btn-primary" style="width:100%; margin-top:8px;" onclick="doRegister()">Kayıt Ol</button>
+        <button class="btn-ghost" style="width:100%; margin-top:12px;" onclick="renderAuthLanding()">‹ Geri</button>
+      </div>
+    </div>
+  `;
+}
+
+async function doLogin() {
+  const email = document.getElementById('li-email').value.trim();
+  const password = document.getElementById('li-pass').value;
+  if(!email || !password) return alert("Lütfen tüm alanları doldurun.");
+
+  const { data, error } = await window.supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    if(error.message.includes('Email not confirmed')) alert("Önce e-postanıza gelen onay linkine tıklayın.");
+    else alert("Giriş başarısız: " + error.message);
+    return;
+  }
+  
+  S.user = data.user;
+  await loadProfile();
+  renderApp();
+}
+
+async function doRegister() {
+  const email = document.getElementById('su-email').value.trim();
+  const password = document.getElementById('su-pass').value;
+  const username = document.getElementById('su-username').value.trim().toLowerCase();
+  const display_name = document.getElementById('su-display').value.trim();
+  const height = document.getElementById('su-height').value;
+  const weight = document.getElementById('su-weight').value;
+
+  if(!email || !password || username.length < 4 || !display_name) {
+    return alert("Lütfen gerekli alanları (Kullanıcı Adı min 4 karakter, İsim, E-posta, Şifre) eksiksiz doldurun.");
   }
 
-  function renderDashboardView(c) {
-    const displayName = S.profile ? S.profile.display_name : 'Kullanıcı';
-    const username = S.profile ? S.profile.username : '—';
-    c.innerHTML = `
-      <div class="bg-[#16241F] border border-[#2A3D35] rounded-2xl p-5 mb-4">
-        <h3 class="font-serif font-bold text-base mb-2">Hoş Geldin, ${displayName}!</h3>
-        <p class="text-xs text-[#8FA39A]">Kullanıcı Adı: @${username}</p>
-      </div>
-      <div class="bg-[#16241F] border border-[#2A3D35] rounded-2xl p-4 text-center">
-        <p class="text-xs text-[#8FA39A]">Ritim günlük takip sisteminiz aktif ve çalışıyor.</p>
-      </div>
-    `;
-  }
-
-  function renderProfileView(c) {
-    const p = S.profile || {};
-    c.innerHTML = `
-      <div class="bg-[#16241F] border border-[#2A3D35] rounded-2xl p-5 text-center mb-4">
-        <div class="w-16 h-16 bg-[#1E332B] rounded-full mx-auto flex items-center justify-center text-2xl mb-3 border border-[#2A3D35]">🌿</div>
-        <h3 class="font-serif font-bold text-lg">${p.display_name || 'İsimsiz'}</h3>
-        <p class="text-xs text-[#8FA39A]">@${p.username || 'kullanici'}</p>
-        <p class="text-[11px] text-[#8FA39A] mt-1">${S.user ? S.user.email : ''}</p>
-      </div>
-    `;
-  }
-
-  window.addEventListener('DOMContentLoaded', () => {
-    boot();
+  const { data, error } = await window.supabase.auth.signUp({
+    email, password,
+    options: { emailRedirectTo: window.location.origin }
   });
+
+  if (error) return alert("Kayıt hatası: " + error.message);
+
+  if (data.user) {
+    // Profil tablosuna kayıt
+    const { error: profileErr } = await window.supabase.from('profiles').insert([
+      { 
+        id: data.user.id, 
+        username, 
+        display_name, 
+        height: height ? parseInt(height) : null,
+        weight: weight ? parseInt(weight) : null,
+        photo: null
+      }
+    ]);
+
+    if(profileErr) {
+      console.error(profileErr);
+      alert("Kayıt olundu fakat profil oluşturulurken hata çıktı.");
+    } else {
+      alert("Kayıt başarılı! Lütfen e-postanıza gelen onay linkine tıklayın.");
+      renderLogin();
+    }
+  }
+}
+
+async function doLogout() {
+  await window.supabase.auth.signOut();
+  S.user = null;
+  S.profile = null;
+  renderAuthLanding();
+}
+
+function renderApp() {
+  const displayName = S.profile ? S.profile.display_name : 'Kullanıcı';
+  
+  root.innerHTML = `
+    <div class="top">
+      <div class="greet">${greeting()}, ${esc(displayName)}</div>
+      <div class="sub">${fmtDateLabel(S.date)}</div>
+    </div>
+    
+    <div class="content" id="content"></div>
+    
+    <div class="nav">
+      ${navBtn('dashboard', '📋', 'Panel')}
+      ${navBtn('profile', '⚙️', 'Profil')}
+    </div>
+  `;
+  renderView();
+}
+
+function greeting(){
+  const h = new Date().getHours();
+  if(h<6) return 'İyi geceler';
+  if(h<12) return 'Günaydın';
+  if(h<18) return 'İyi günler';
+  return 'İyi akşamlar';
+}
+
+function navBtn(id, icon, label) {
+  const active = S.view === id ? 'active' : '';
+  return `<button class="${active}" onclick="switchView('${id}')"><span class="ic">${icon}</span>${label}</button>`;
+}
+
+window.switchView = function(v) {
+  S.view = v;
+  renderView();
+}
+
+function renderView() {
+  const c = document.getElementById('content');
+  if(!c) return;
+  if(S.view === 'dashboard') renderDashboard(c);
+  else if(S.view === 'profile') renderProfile(c);
+}
+
+function renderDashboard(c) {
+  // Basit Mock Veri Hesaplamaları (Sunucusuz çalışma için)
+  const totalCal = S.dayData.calories.reduce((a,x)=>a+Number(x.kcal||0),0);
+  const totalMove = S.dayData.moves.reduce((a,x)=>a+Number(x.min||0),0);
+
+  c.innerHTML = `
+    <div class="day-nav">
+      <button class="btn-icon" onclick="shiftDay(-1)">‹</button>
+      <div class="lbl" style="font-weight:bold;">${fmtDateLabel(S.date)}</div>
+      <button class="btn-icon" onclick="shiftDay(1)">›</button>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-cell"><div class="num" style="color:var(--accent)">${totalCal}</div><div class="lbl">kalori</div></div>
+      <div class="summary-cell"><div class="num" style="color:var(--water)">${S.dayData.water}</div><div class="lbl">bardak su</div></div>
+      <div class="summary-cell"><div class="num" style="color:var(--move)">${totalMove}</div><div class="lbl">dk hareket</div></div>
+      <div class="summary-cell"><div class="num" style="color:var(--work)">${S.dayData.work.length}</div><div class="lbl">görev/ders</div></div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <h3><span class="dot" style="background:var(--accent)"></span>Yemek & Kalori</h3>
+        <button class="btn-ghost btn-sm" onclick="openAddCal()">＋ Ekle</button>
+      </div>
+      <div style="margin-top:12px;">
+        ${S.dayData.calories.length ? S.dayData.calories.map(x => `
+          <div class="list-item">
+            <div>${esc(x.name)}</div>
+            <div style="font-weight:bold; color:var(--accent);">${x.kcal} kcal</div>
+          </div>
+        `).join('') : '<div class="empty">Bugün henüz yemek kaydedilmedi.</div>'}
+      </div>
+      <button class="btn-primary btn-sm" style="width:100%; margin-top:12px;" onclick="alert('AI Bot aktif edildi (Mock)')">🤖 AI Bot ile Ekle (Simüle)</button>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <h3><span class="dot" style="background:var(--water)"></span>Su Takibi</h3>
+        <div class="row">
+          <button class="btn-icon" onclick="adjWater(-1)">−</button>
+          <div style="font-size:16px; font-weight:bold; width: 30px; text-align:center;">${S.dayData.water}</div>
+          <button class="btn-icon" onclick="adjWater(1)">＋</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+window.shiftDay = function(n) {
+  const d = new Date(S.date+'T00:00:00'); 
+  d.setDate(d.getDate()+n);
+  S.date = todayStr(d);
+  renderView();
+}
+
+window.adjWater = function(n) {
+  S.dayData.water = Math.max(0, S.dayData.water + n);
+  renderView();
+}
+
+window.openAddCal = function() {
+  const name = prompt("Yemek adı (ör. Mercimek Çorbası):");
+  if(!name) return;
+  const kcal = prompt("Kalori değeri (ör. 250):");
+  if(!kcal || isNaN(kcal)) return;
+  
+  S.dayData.calories.push({ id: uid(), name, kcal: Number(kcal) });
+  renderView();
+}
+
+function renderProfile(c) {
+  const p = S.profile || {};
+  c.innerHTML = `
+    <div class="card" style="text-align:center; padding: 30px 16px;">
+      <div style="width:72px; height:72px; background:var(--surface-2); border-radius:50%; margin:0 auto 12px; display:flex; align-items:center; justify-content:center; font-size:32px;">🌿</div>
+      <h2>${esc(p.display_name || 'İsimsiz')}</h2>
+      <p class="muted">@${esc(p.username || 'kullanici')}</p>
+      <p class="muted" style="font-size:11px; margin-top:4px;">${S.user ? S.user.email : ''}</p>
+    </div>
+    
+    <div class="card">
+      <h3 style="margin-bottom:12px;">Vücut Bilgileri</h3>
+      <div class="grid2">
+        <div class="field"><label>Boy (cm)</label><input value="${p.height || ''}" disabled></div>
+        <div class="field"><label>Kilo (kg)</label><input value="${p.weight || ''}" disabled></div>
+      </div>
+      <p class="muted" style="font-size:11px; margin-top:8px;">Bilgilerinizi güncellemek için web uygulamanızın ayarlarını kullanın.</p>
+    </div>
+
+    <button class="btn-ghost" style="width:100%; border-color:#ef4444; color:#ef4444; margin-top: 10px;" onclick="doLogout()">Oturumu Kapat</button>
+  `;
+}
 </script>
 </body>
 </html>
