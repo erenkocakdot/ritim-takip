@@ -3,299 +3,1110 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ritim — Günlük Takip & Kimlik Doğrulama</title>
-<!-- Tailwind CSS for modern styling -->
-<script src="https://cdn.tailwindcss.com"></script>
-<!-- Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          bg: '#0F1A16',
-          surface: '#16241F',
-          surface2: '#1E332B',
-          line: '#2A3D35',
-          text: '#EDEAE0',
-          muted: '#8FA39A',
-          accent: '#FF7A57',
-          accentSoft: '#3A241D',
-          sleep: '#9AA6FF',
-          water: '#57C4E6',
-          work: '#C58AF9',
-          move: '#6FCF97'
-        }
-      }
-    }
-  }
-</script>
+<title>Ritim — Günlük Takip</title>
 <style>
-  body { background-color: #0F1A16; color: #EDEAE0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  ::-webkit-scrollbar { width: 0px; }
+  :root{
+    --bg:#0F1A16;
+    --surface:#16241F;
+    --surface-2:#1E332B;
+    --line:#2A3D35;
+    --text:#EDEAE0;
+    --muted:#8FA39A;
+    --accent:#FF7A57;      /* yemek / kalori */
+    --accent-soft:#3A241D;
+    --sleep:#9AA6FF;
+    --water:#57C4E6;
+    --study:#F4C95D;
+    --work:#C58AF9;
+    --move:#6FCF97;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif; font-weight:600; margin:0;}
+  #root{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);position:relative;}
+  .top{padding:20px 18px 12px;}
+  .top .greet{font-size:22px;}
+  .top .sub{color:var(--muted);font-size:13px;margin-top:2px;}
+  .content{flex:1;padding:0 14px 90px;overflow-y:auto;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+  .card h3{font-size:15px;display:flex;align-items:center;gap:8px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .muted{color:var(--muted);font-size:13px;}
+  input,select,textarea,button{font-family:inherit;font-size:14px;}
+  input,select,textarea{background:var(--surface-2);border:1px solid var(--line);color:var(--text);
+    border-radius:9px;padding:9px 10px;width:100%;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
+  button{cursor:pointer;border:none;border-radius:9px;padding:9px 14px;font-weight:600;}
+  .btn-primary{background:var(--accent);color:#1A0E09;}
+  .btn-ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line);}
+  .btn-sm{padding:6px 10px;font-size:12.5px;}
+  .btn-icon{background:var(--surface-2);color:var(--text);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .list-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .list-item:last-child{border-bottom:none;}
+  .tag{font-size:11px;padding:2px 7px;border-radius:20px;background:var(--surface-2);color:var(--muted);}
+  .bar-bg{background:var(--surface-2);border-radius:20px;height:8px;overflow:hidden;margin-top:6px;}
+  .bar-fill{height:100%;border-radius:20px;}
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .summary-cell{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px;}
+  .summary-cell .num{font-family:Georgia,serif;font-size:22px;}
+  .summary-cell .lbl{color:var(--muted);font-size:11.5px;text-transform:none;margin-top:2px;}
+  .nav{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--line);
+    display:flex;justify-content:space-around;padding:8px 4px calc(8px + env(safe-area-inset-bottom));}
+  .nav button{background:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:500;border-radius:8px;padding:6px 8px;}
+  .nav button.active{color:var(--accent);}
+  .nav button .ic{font-size:19px;}
+  .day-nav{display:flex;align-items:center;justify-content:space-between;padding:0 2px 10px;}
+  .day-nav .lbl{font-size:14px;font-weight:600;}
+  .empty{color:var(--muted);font-size:13px;padding:14px 0;text-align:center;}
+  .post{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px;overflow:hidden;}
+  .post img{width:100%;display:block;max-height:340px;object-fit:cover;background:var(--surface-2);}
+  .post .body{padding:12px 14px;}
+  .post .head{display:flex;align-items:center;gap:8px;padding:12px 14px 0;}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;overflow:hidden;}
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+  .comment{font-size:13px;margin-top:6px;}
+  .comment b{font-weight:600;}
+  .read-more{color:var(--accent);font-size:12.5px;margin-top:4px;cursor:pointer;font-weight:600;}
+  .my-posts-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+  .my-posts-grid .thumb{aspect-ratio:1;background:var(--surface-2);border-radius:8px;overflow:hidden;cursor:pointer;position:relative;}
+  .my-posts-grid .thumb img{width:100%;height:100%;object-fit:cover;}
+  .my-posts-grid .thumb .no-img{display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;color:var(--muted);padding:6px;text-align:center;}
+  .avatar-edit{position:relative;display:inline-block;}
+  .avatar-edit .pencil{position:absolute;bottom:-2px;right:-2px;background:var(--accent);color:#1A0E09;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;}
+  .wheel-wrap{display:flex;justify-content:center;align-items:center;gap:6px;height:180px;position:relative;margin:10px 0;}
+  .wheel-col{width:64px;height:180px;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;padding:70px 0;}
+  .wheel-col::-webkit-scrollbar{display:none;}
+  .wheel-item{height:40px;display:flex;align-items:center;justify-content:center;font-size:19px;scroll-snap-align:center;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .wheel-sep{font-size:20px;color:var(--muted);}
+  .wheel-center-line{position:absolute;top:70px;left:10px;right:10px;height:40px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);pointer-events:none;}
+  .sport-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+  .sport-btn{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 4px;text-align:center;font-size:11.5px;color:var(--text);}
+  .sport-btn.active{border-color:var(--move);background:var(--accent-soft);}
+  .sport-btn .ic{font-size:20px;display:block;margin-bottom:2px;}
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:50;}
-  .modal{background:#16241F;border-radius:18px 18px 0 0;padding:18px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;border-top:1px solid #2A3D35;}
+  .modal{background:var(--surface);border-radius:18px 18px 0 0;padding:18px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;}
+  .field{margin-bottom:10px;}
+  .field label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;}
+  .close-x{position:absolute;top:12px;right:12px;background:var(--surface-2);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  .login-wrap{display:flex;flex-direction:column;justify-content:center;min-height:100vh;padding:30px;}
+  .login-wrap h1{font-size:30px;margin-bottom:6px;}
+  .chat-bubble{max-width:75%;padding:8px 12px;border-radius:14px;font-size:13.5px;margin-bottom:6px;}
+  .chat-me{background:var(--accent);color:#1A0E09;margin-left:auto;border-bottom-right-radius:4px;}
+  .chat-them{background:var(--surface-2);margin-right:auto;border-bottom-left-radius:4px;}
+  .fab{position:fixed;bottom:80px;right:calc(50% - 240px + 18px);background:var(--accent);color:#1A0E09;width:50px;height:50px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.4);z-index:20;}
+  @media(max-width:520px){.fab{right:18px;}}
+  a{color:var(--accent);}
+  ::-webkit-scrollbar{width:0;}
 </style>
 </head>
-<body class="bg-[#0F1A16] text-[#EDEAE0] min-h-screen flex flex-col items-center">
-
-<div id="app" class="w-full max-w-[480px] min-h-screen flex flex-col bg-[#0F1A16] relative shadow-2xl">
-  <!-- Dynamic views rendered here -->
-</div>
+<body>
+<div id="root"></div>
 
 <script>
-  const SUPABASE_URL = 'https://umgfogfuljroiqvkyugd.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_b4YGCNNdgl44Ue95MTr2Ew_Tc537pzV';
-  
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const root = document.getElementById('root');
+const S = { user:null, view:'dashboard', date: todayStr(), chatWith:null, cache:{} };
 
-  // Global State
-  const S = {
-    user: null,
-    profile: null,
-    view: 'dashboard',
-    date: new Date().toISOString().slice(0, 10),
-    cache: {}
-  };
-
-  // Boot Application Session check
-  async function boot() {
-    try {
-      const { data: { session } } = await sb.auth.getSession();
-      if (session && session.user) {
-        S.user = session.user;
-        await loadUserProfile();
-        renderMainApp();
-      } else {
-        renderAuthLanding();
-      }
-    } catch (err) {
-      console.error("Boot error:", err);
-      renderAuthLanding();
-    }
-  }
-
-  // Load user profile details from public.profiles
-  async function loadUserProfile() {
-    if (!S.user) return;
-    try {
-      const { data, error } = await sb
-        .from('profiles')
-        .select('*')
-        .eq('id', S.user.id)
-        .single();
-        
-      if (data) {
-        S.profile = data;
-      } else {
-        console.warn("Profil tablosunda kayıt bulunamadı:", error);
-      }
-    } catch (err) {
-      console.error("Profil yüklenirken hata:", err);
-    }
-  }
-
-  // Auth Landing Screen
-  function renderAuthLanding() {
-    const root = document.getElementById('app');
-    root.innerHTML = `
-      <div class="p-6 flex flex-col justify-center min-h-screen">
-        <h1 class="text-4xl font-serif font-bold mb-2 text-accent">Ritim</h1>
-        <p class="text-[#8FA39A] text-sm mb-6">Günlük düzenini takip et, AI asistanlarla kalorini hesapla, arkadaşlarınla bağlan.</p>
-        <div class="bg-[#16241F] border border-[#2A3D35] p-5 rounded-2xl space-y-3">
-          <button onclick="renderLoginScreen()" class="w-full py-3 bg-accent text-[#1A0E09] font-bold rounded-xl shadow-lg">Oturum Aç</button>
-          <button onclick="renderRegisterScreen()" class="w-full py-3 bg-[#1E332B] text-[#EDEAE0] border border-[#2A3D35] font-bold rounded-xl">Yeni Hesap Oluştur</button>
-        </div>
-      </div>
-    `;
-  }
-
-  // Login Screen
-  function renderLoginScreen() {
-    const root = document.getElementById('app');
-    root.innerHTML = `
-      <div class="p-6 flex flex-col justify-center min-h-screen">
-        <h1 class="text-3xl font-serif font-bold mb-2">Oturum Aç</h1>
-        <p class="text-[#8FA39A] text-sm mb-6">E-posta ve şifrenle giriş yap.</p>
-        <div class="bg-[#16241F] border border-[#2A3D35] p-5 rounded-2xl space-y-4">
-          <div>
-            <label class="block text-xs text-[#8FA39A] mb-1">E-posta</label>
-            <input id="lg-email" type="email" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="ornek@mail.com">
-          </div>
-          <div>
-            <label class="block text-xs text-[#8FA39A] mb-1">Şifre</label>
-            <input id="lg-pw" type="password" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="••••••••">
-          </div>
-          <button onclick="doLogin()" class="w-full py-3 bg-accent text-[#1A0E09] font-bold rounded-xl shadow-lg mt-2">Giriş Yap</button>
-          <button onclick="renderAuthLanding()" class="w-full py-2 bg-[#1E332B] text-xs rounded-xl text-[#8FA39A] border border-[#2A3D35]">‹ Geri</button>
-        </div>
-      </div>
-    `;
-  }
-
-  async function doLogin() {
-    const email = document.getElementById('lg-email').value.trim();
-    const password = document.getElementById('lg-pw').value;
-    if (!email || !password) {
-      alert("Lütfen tüm alanları doldurun.");
-      return;
-    }
-
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) {
-      alert("Giriş başarısız: " + error.message);
-      return;
-    }
-
-    S.user = data.user;
-    await loadUserProfile();
-    renderMainApp();
-  }
-
-  // Register Screen
-  function renderRegisterScreen() {
-    const root = document.getElementById('app');
-    root.innerHTML = `
-      <div class="p-6 flex flex-col justify-center min-h-screen">
-        <h1 class="text-3xl font-serif font-bold mb-2">Kayıt Ol</h1>
-        <p class="text-[#8FA39A] text-sm mb-6">Kullanıcı adı ve görünen adınla profilini oluştur.</p>
-        <div class="bg-[#16241F] border border-[#2A3D35] p-5 rounded-2xl space-y-3">
-          <div>
-            <label class="block text-xs text-[#8FA39A] mb-1">Kullanıcı Adı (en az 4 karakter)</label>
-            <input id="reg-username" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="ornek_kisi">
-          </div>
-          <div>
-            <label class="block text-xs text-[#8FA39A] mb-1">Görünen Ad</label>
-            <input id="reg-display" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="Adın Soyadın">
-          </div>
-          <div>
-            <label class="block text-xs text-[#8FA39A] mb-1">E-posta</label>
-            <input id="reg-email" type="email" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="ornek@mail.com">
-          </div>
-          <div>
-            <label class="block text-xs text-[#8FA39A] mb-1">Şifre (Min 8 karakter, büyük harf ve özel karakter)</label>
-            <input id="reg-pw" type="password" class="w-full bg-[#1E332B] border border-[#2A3D35] rounded-xl p-3 text-sm focus:outline-none focus:border-accent" placeholder="••••••••">
-          </div>
-          <button onclick="doRegister()" class="w-full py-3 bg-accent text-[#1A0E09] font-bold rounded-xl shadow-lg mt-2">Kayıt Ol</button>
-          <button onclick="renderAuthLanding()" class="w-full py-2 bg-[#1E332B] text-xs rounded-xl text-[#8FA39A] border border-[#2A3D35]">‹ Geri</button>
-        </div>
-      </div>
-    `;
-  }
-
-  async function doRegister() {
-    const username = document.getElementById('reg-username').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
-    const displayName = document.getElementById('reg-display').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-pw').value;
-
-    if (!username || username.length < 4 || !displayName || !email || !password) {
-      alert("Lütfen tüm alanları eksiksiz doldurun (Kullanıcı adı min 4 karakter olmalı).");
-      return;
-    }
-
-    // 1. Supabase Auth Signup
-    const { data, error } = await sb.auth.signUp({ email, password });
-    if (error) {
-      alert("Kayıt hatası: " + error.message);
-      return;
-    }
-
-    if (data.user) {
-      // 2. Insert into public.profiles table
-      const { error: profileErr } = await sb.from('profiles').insert([
-        { id: data.user.id, username: username, display_name: displayName, photo: null }
-      ]);
-
-      if (profileErr) {
-        console.error("Profil kaydedilemedi:", profileErr.message);
-        alert("Kayıt olundu ancak profil kaydedilirken hata oluştu: " + profileErr.message);
-      } else {
-        alert("Kayıt başarılı! Giriş yapabilirsiniz.");
-        renderLoginScreen();
-      }
-    }
-  }
-
-  function renderMainApp() {
-    const root = document.getElementById('app');
-    const displayName = S.profile ? S.profile.display_name : (S.user ? S.user.email : 'Kullanıcı');
-    
-    root.innerHTML = `
-      <div class="px-5 pt-6 pb-3 flex justify-between items-center bg-[#0F1A16] sticky top-0 z-30">
-        <div>
-          <h2 class="text-2xl font-serif font-bold">Ritim, ${displayName}</h2>
-          <p class="text-xs text-[#8FA39A]">Günlük Düzen & Takip</p>
-        </div>
-        <button onclick="doLogout()" class="text-xs bg-[#1E332B] px-3 py-1.5 rounded-lg border border-[#2A3D35] text-[#8FA39A]">Çıkış</button>
-      </div>
-
-      <div id="main-content" class="flex-1 px-4 pb-28 overflow-y-auto"></div>
-
-      <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-[#16241F] border-t border-[#2A3D35] flex justify-around p-2 z-40">
-        ${navBtn('dashboard', '📋', 'Panel')}
-        ${navBtn('profile', '⚙️', 'Profil')}
-      </nav>
-    `;
-    renderViewContent();
-  }
-
-  function navBtn(id, icon, label) {
-    const active = S.view === id;
-    return `<button onclick="switchView('${id}')" class="flex flex-col items-center p-2 rounded-xl text-xs font-medium ${active ? 'text-accent' : 'text-[#8FA39A]'}">
-      <span class="text-lg">${icon}</span>${label}
-    </button>`;
-  }
-
-  function switchView(v) {
-    S.view = v;
-    renderMainApp();
-  }
-
-  async function doLogout() {
-    await sb.auth.signOut();
-    S.user = null;
-    S.profile = null;
-    renderAuthLanding();
-  }
-
-  function renderViewContent() {
-    const c = document.getElementById('main-content');
-    if (!c) return;
-    if (S.view === 'dashboard') renderDashboardView(c);
-    else if (S.view === 'profile') renderProfileView(c);
-  }
-
-  function renderDashboardView(c) {
-    const displayName = S.profile ? S.profile.display_name : 'Kullanıcı';
-    const username = S.profile ? S.profile.username : '—';
-    c.innerHTML = `
-      <div class="bg-[#16241F] border border-[#2A3D35] rounded-2xl p-5 mb-4">
-        <h3 class="font-serif font-bold text-base mb-2">Hoş Geldin, ${displayName}!</h3>
-        <p class="text-xs text-[#8FA39A]">Kullanıcı Adı: @${username}</p>
-      </div>
-      <div class="bg-[#16241F] border border-[#2A3D35] rounded-2xl p-4 text-center">
-        <p class="text-xs text-[#8FA39A]">Ritim günlük takip sisteminiz aktif ve çalışıyor.</p>
-      </div>
-    `;
-  }
-
-  function renderProfileView(c) {
-    const p = S.profile || {};
-    c.innerHTML = `
-      <div class="bg-[#16241F] border border-[#2A3D35] rounded-2xl p-5 text-center mb-4">
-        <div class="w-16 h-16 bg-[#1E332B] rounded-full mx-auto flex items-center justify-center text-2xl mb-3 border border-[#2A3D35]">🌿</div>
-        <h3 class="font-serif font-bold text-lg">${p.display_name || 'İsimsiz'}</h3>
-        <p class="text-xs text-[#8FA39A]">@${p.username || 'kullanici'}</p>
-        <p class="text-[11px] text-[#8FA39A] mt-1">${S.user ? S.user.email : ''}</p>
-      </div>
-    `;
-  }
-
-  // Initialize application on window load
-  window.addEventListener('DOMContentLoaded', () => {
-    boot();
+function todayStr(d){ const x=d?new Date(d):new Date(); return x.toISOString().slice(0,10); }
+function fmtDateLabel(ds){
+  const d=new Date(ds+'T00:00:00');
+  const t=new Date(todayStr()+'T00:00:00');
+  const diff=Math.round((t-d)/86400000);
+  const days=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+  if(diff===0) return 'Bugün';
+  if(diff===1) return 'Dün';
+  return days[d.getDay()]+' · '+d.getDate()+'/'+(d.getMonth()+1);
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function esc(s){ return (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function avatarHtml(u, size){
+  size = size||32;
+  if(u && u.photo) return `<div class="avatar" style="width:${size}px;height:${size}px;"><img src="${u.photo}"></div>`;
+  return `<div class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.5)}px;">${esc((u&&u.avatar)||'🙂')}</div>`;
+}
+const CAPTION_WORD_LIMIT = 40;
+const SPORTS = [
+  {id:'yuruyus', label:'Yürüyüş', icon:'🚶', met:3.8, distance:true},
+  {id:'kosu', label:'Koşu', icon:'🏃', met:9.8, distance:true},
+  {id:'bisiklet', label:'Bisiklet', icon:'🚴', met:7.5, distance:true},
+  {id:'yuzme', label:'Yüzme', icon:'🏊', met:8.3, distance:true},
+  {id:'futbol', label:'Futbol', icon:'⚽', met:7.0, distance:false},
+  {id:'basketbol', label:'Basketbol', icon:'🏀', met:6.5, distance:false},
+  {id:'voleybol', label:'Voleybol', icon:'🏐', met:4.0, distance:false},
+  {id:'fitness', label:'Fitness', icon:'🏋️', met:5.0, distance:false},
+  {id:'yoga', label:'Yoga/Pilates', icon:'🧘', met:2.8, distance:false},
+  {id:'tenis', label:'Tenis', icon:'🎾', met:7.3, distance:false},
+  {id:'diger', label:'Diğer', icon:'✨', met:5.0, distance:false},
+];
+function truncateWords(text, limit){
+  if(!text) return {short:'', truncated:false};
+  const words = text.trim().split(/\s+/);
+  if(words.length<=limit) return {short:text, truncated:false};
+  return {short:words.slice(0,limit).join(' ')+'…', truncated:true};
+}
+async function resizeFileToDataUrl(file, maxW, quality){
+  return new Promise((resolve)=>{
+    const img=new Image(); const reader=new FileReader();
+    reader.onload=e=>{
+      img.onload=()=>{
+        const scale=Math.min(1, maxW/img.width);
+        const canvas=document.createElement('canvas');
+        canvas.width=img.width*scale; canvas.height=img.height*scale;
+        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality||0.7));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
   });
+}
+
+// ---------- storage helpers ----------
+async function sGet(key, shared){ try{ const r = await window.storage.get(key, shared); return r? JSON.parse(r.value): null; }catch(e){ return null; } }
+async function sSet(key, val, shared){ try{ return await window.storage.set(key, JSON.stringify(val), shared); }catch(e){ console.error(e); return null; } }
+async function sList(prefix, shared){ try{ const r = await window.storage.list(prefix, shared); return r? r.keys: []; }catch(e){ return []; } }
+async function sDel(key, shared){ try{ return await window.storage.delete(key, shared); }catch(e){ return null; } }
+
+// ---------- boot ----------
+async function boot(){
+  const me = await sGet('me', false);
+  if(me && me.username){ S.user = me; await ensureDirectory(me); render(); }
+  else { renderLogin(); }
+}
+async function ensureDirectory(me){
+  const entry = await sGet('user:'+me.username, true);
+  if(!entry) await sSet('user:'+me.username, {displayName: me.displayName, avatar: me.avatar, photo: me.photo||null, email: me.email||null, joinedAt: Date.now()}, true);
+}
+
+function renderLogin(){
+  root.innerHTML = `
+    <div class="login-wrap">
+      <h1>Ritim</h1>
+      <p class="muted" style="margin-bottom:24px;">Günlük düzenini takip et, arkadaşlarınla paylaş.</p>
+      <div class="card">
+        <div class="field"><label>Kullanıcı adı (en az 4 karakter, benzersiz olmalı)</label><input id="in-username" placeholder="ör. erenk"></div>
+        <div class="field"><label>E-posta</label><input id="in-email" type="email" placeholder="ör. eren@mail.com"></div>
+        <div class="field"><label>Görünen ad</label><input id="in-display" placeholder="ör. Eren"></div>
+        <div class="field"><label>Avatar (bir emoji seç)</label><input id="in-avatar" placeholder="🙂" maxlength="2" value="🙂"></div>
+        <div class="field"><label>Profil fotoğrafı (isteğe bağlı)</label><input type="file" id="in-photo" accept="image/*"></div>
+        <button class="btn-primary" style="width:100%;margin-top:6px;" onclick="doLogin()">Başla</button>
+        <p class="muted" style="margin-top:10px;font-size:11.5px;">Not: Bu bir demo — şifre / güvenli kimlik doğrulama yok. Sosyal veriler (gönderiler, arkadaşlar, sohbet) bu uygulamayı kullanan herkes tarafından erişilebilir bir ortak alanda tutulur; kişisel takip verilerin ise yalnızca sana ait.</p>
+      </div>
+    </div>`;
+}
+async function doLogin(){
+  const username = document.getElementById('in-username').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  const email = document.getElementById('in-email').value.trim();
+  const displayName = document.getElementById('in-display').value.trim() || username;
+  const avatar = document.getElementById('in-avatar').value.trim() || '🙂';
+  if(!username || username.length<4){ alert('Kullanıcı adı en az 4 karakter olmalı.'); return; }
+  if(!email || !email.includes('@')){ alert('Geçerli bir e-posta adresi gir.'); return; }
+  const existing = await sGet('user:'+username, true);
+  if(existing){ alert('Bu kullanıcı adı zaten alınmış, başka bir tane dene.'); return; }
+  const photoFile = document.getElementById('in-photo').files[0];
+  let photo = null;
+  if(photoFile) photo = await resizeFileToDataUrl(photoFile, 220, 0.75);
+  const me = {username, displayName, avatar, photo, email};
+  await sSet('me', me, false);
+  await sSet('user:'+username, {displayName, avatar, photo, email, joinedAt: Date.now()}, true);
+  const adminUsername = await sGet('admin_username', true);
+  if(!adminUsername) await sSet('admin_username', username, true);
+  S.user = me;
+  render();
+}
+async function doLogout(){
+  await sSet('me', null, false);
+  location.reload();
+}
+
+// ---------- shell ----------
+function render(){
+  root.innerHTML = `
+    <div class="top">
+      <div class="greet">${greeting()}, ${esc(S.user.displayName)} ${esc(S.user.avatar)}</div>
+      <div class="sub">${fmtDateLabel(S.date)}</div>
+    </div>
+    <div class="content" id="content"></div>
+    <div class="nav">
+      ${navBtn('dashboard','📋','Panel')}
+      ${navBtn('feed','🖼️','Akış')}
+      ${navBtn('friends','👥','Kişiler')}
+      ${navBtn('chat','💬','Mesajlar')}
+      ${navBtn('profile','⚙️','Profil')}
+    </div>
+  `;
+  renderView();
+  maybeAskCameraPermission();
+}
+async function maybeAskCameraPermission(){
+  const asked = await sGet('camera_permission_asked', false);
+  if(asked) return;
+  showModal(`
+    <h3 style="margin-bottom:10px;">📷 Kamera izni</h3>
+    <p class="muted" style="font-size:13px;">Yemek fotoğrafından kalori tahmini yapabilmemiz ve profil fotoğrafı çekebilmen için kamera erişimine ihtiyacımız olacak. Şimdi izin vermek ister misin?</p>
+    <div class="grid2" style="margin-top:12px;">
+      <button class="btn-ghost btn-sm" onclick="skipCameraPermission()">Şimdi değil</button>
+      <button class="btn-primary btn-sm" onclick="requestCameraPermission()">İzin ver</button>
+    </div>
+  `);
+}
+async function requestCameraPermission(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({video:true});
+    stream.getTracks().forEach(t=>t.stop());
+  }catch(e){ /* reddedildi ya da desteklenmiyor — fotoğraf seçme yine de çalışır */ }
+  await sSet('camera_permission_asked', true, false);
+  closeModal();
+}
+async function skipCameraPermission(){
+  await sSet('camera_permission_asked', true, false);
+  closeModal();
+}
+function greeting(){
+  const h = new Date().getHours();
+  if(h<6) return 'İyi geceler';
+  if(h<12) return 'Günaydın';
+  if(h<18) return 'İyi günler';
+  return 'İyi akşamlar';
+}
+function navBtn(id,ic,label){
+  return `<button class="${S.view===id?'active':''}" onclick="switchView('${id}')"><span class="ic">${ic}</span>${label}</button>`;
+}
+function switchView(v){ S.view=v; renderView(); }
+function renderView(){
+  const c = document.getElementById('content');
+  if(!c) return;
+  if(S.view==='dashboard') renderDashboard(c);
+  else if(S.view==='feed') renderFeed(c);
+  else if(S.view==='friends') renderFriends(c);
+  else if(S.view==='chat') renderChatList(c);
+  else if(S.view==='profile') renderProfile(c);
+  else if(S.view==='admin') renderAdmin(c);
+}
+
+// ================= DASHBOARD =================
+async function loadDay(date){
+  const key = 'log:'+date;
+  let d = await sGet(key, false);
+  if(!d) d = {calories:[], sleep:{bed:'',wake:''}, water:0, work:[], moves:[]};
+  if(!d.work) d.work=[];
+  if(d.study && d.study.length){
+    d.work = d.work.concat(d.study.map(s=>({...s, kind: s.kind||'ders'})));
+    delete d.study;
+    await saveDay(date, d);
+  }
+  return d;
+}
+async function saveDay(date, data){ await sSet('log:'+date, data, false); }
+
+async function renderDashboard(c){
+  c.innerHTML = `<div class="empty">Yükleniyor…</div>`;
+  const day = await loadDay(S.date);
+  const totalCal = day.calories.reduce((a,x)=>a+Number(x.kcal||0),0);
+  const sleepH = sleepHours(day.sleep);
+  const totalMove = day.moves.reduce((a,x)=>a+Number(x.min||0),0);
+  const totalBurned = day.moves.reduce((a,x)=>a+Number(x.kcal||0),0);
+  const body = await sGet('body', false);
+  const settings = (await sGet('settings', false)) || {};
+  const computed = computeTargets(body);
+  const calorieTarget = settings.calorieTarget!=null ? settings.calorieTarget : (computed? computed.calories : null);
+  const waterTarget = settings.waterTarget!=null ? settings.waterTarget : (computed? computed.waterGlasses : 13);
+
+  c.innerHTML = `
+    <div class="day-nav">
+      <button class="btn-icon" onclick="shiftDay(-1)">‹</button>
+      <div class="lbl">${fmtDateLabel(S.date)}</div>
+      <button class="btn-icon" onclick="shiftDay(1)">›</button>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-cell"><div class="num" style="color:var(--accent)">${totalCal}</div><div class="lbl">kalori</div></div>
+      <div class="summary-cell"><div class="num" style="color:var(--sleep)">${sleepH||'—'}</div><div class="lbl">saat uyku</div></div>
+      <div class="summary-cell"><div class="num" style="color:var(--water)">${day.water}</div><div class="lbl">bardak su</div></div>
+      <div class="summary-cell"><div class="num" style="color:var(--move)">${totalMove}</div><div class="lbl">dk hareket</div></div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <h3><span class="dot" style="background:var(--accent)"></span>Yemek &amp; Kalori</h3>
+        <button class="btn-ghost btn-sm" onclick="openTargets()">🎯 Hedeflerim</button>
+      </div>
+      <div class="muted" style="margin:8px 0 2px;font-size:13px;">Bugün toplam: <b style="color:var(--text)">${totalCal} kcal</b>${calorieTarget? ` / hedef ${calorieTarget} kcal`:''}</div>
+      ${calorieTarget? `<div class="bar-bg" style="margin-bottom:6px;"><div class="bar-fill" style="width:${Math.min(100,totalCal/calorieTarget*100)}%;background:var(--accent)"></div></div>`:''}
+      <div id="cal-list" style="margin-top:8px;">${day.calories.length? day.calories.map(calRow).join(''): '<div class="empty">Henüz kayıt yok</div>'}</div>
+      <div class="grid2" style="margin-top:10px;">
+        <button class="btn-ghost btn-sm" onclick="openManualCal()">＋ Elle ekle</button>
+        <button class="btn-primary btn-sm" onclick="openPhotoCal()">📷 Fotoğrafla ekle</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:var(--sleep)"></span>Uyku</h3>
+      <div class="grid2">
+        <div class="field"><label>Yattığım saat</label>
+          <button class="btn-ghost" style="width:100%;text-align:center;" onclick="openTimePicker('bed')">${day.sleep.bed||'Seç'}</button>
+        </div>
+        <div class="field"><label>Kalktığım saat</label>
+          <button class="btn-ghost" style="width:100%;text-align:center;" onclick="openTimePicker('wake')">${day.sleep.wake||'Seç'}</button>
+        </div>
+      </div>
+      ${sleepH? `<div class="muted" style="margin-top:6px;">Toplam: ${sleepH} saat</div>`:''}
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:var(--water)"></span>Su</h3>
+      <div class="row">
+        <button class="btn-icon" onclick="adjWater(-1)">−</button>
+        <div style="font-size:18px;">${day.water} / ${waterTarget} bardak</div>
+        <button class="btn-icon" onclick="adjWater(1)">＋</button>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(100,day.water/waterTarget*100)}%;background:var(--water)"></div></div>
+      <div class="row" style="margin-top:8px;">
+        <div class="muted" style="font-size:12.5px;">${(day.water*0.25).toFixed(2)} L / ${(waterTarget*0.25).toFixed(2)} L</div>
+        <button class="btn-ghost btn-sm" onclick="openWaterTargetEdit()">✎ Hedefi düzenle</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:var(--work)"></span>Çalışma</h3>
+      <div id="work-list">${day.work.length? day.work.map(sessionRow).join(''): '<div class="empty">Henüz kayıt yok</div>'}</div>
+      <button class="btn-ghost btn-sm" style="margin-top:8px;" onclick="openSession()">＋ Ekle</button>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot" style="background:var(--move)"></span>Yürüyüş &amp; Spor</h3>
+      ${totalBurned>0? `<div class="muted" style="margin:6px 0;font-size:13px;">Bugün yakılan: <b style="color:var(--text)">~${totalBurned} kcal</b></div>`:''}
+      <div id="move-list">${day.moves.length? day.moves.map(moveRow).join(''): '<div class="empty">Henüz kayıt yok</div>'}</div>
+      <button class="btn-ghost btn-sm" style="margin-top:8px;" onclick="openMove()">＋ Aktivite ekle</button>
+    </div>
+  `;
+}
+function calRow(x){
+  return `<div class="list-item"><div>${esc(x.name)} <span class="tag">${x.time||''}${x.ai?' · AI':''}</span></div><div>${x.kcal} kcal</div></div>`;
+}
+function sessionRow(s){
+  const tag = s.kind==='ders' ? 'Ders' : 'İş';
+  return `<div class="list-item"><div>${esc(s.label||'')} <span class="tag">${tag}</span></div><div class="muted">${s.start}–${s.end}</div></div>`;
+}
+function moveRow(m){
+  const details = [m.min+' dk', m.km? m.km+' km':null].filter(Boolean).join(' · ');
+  return `<div class="list-item"><div>${m.icon||'🏃'} ${esc(m.label)} <span class="tag">${details}</span></div><div>${m.kcal? '~'+m.kcal+' kcal':'—'}</div></div>`;
+}
+function sleepHours(sleep){
+  if(!sleep || !sleep.bed || !sleep.wake) return null;
+  let [bh,bm]=sleep.bed.split(':').map(Number);
+  let [wh,wm]=sleep.wake.split(':').map(Number);
+  let bed=bh*60+bm, wake=wh*60+wm;
+  let diff=wake-bed; if(diff<=0) diff+=24*60;
+  return (diff/60).toFixed(1);
+}
+function computeTargets(body){
+  if(!body || !body.weight || !body.height) return null;
+  const w=Number(body.weight), h=Number(body.height), age=Number(body.age)||25;
+  if(!w || !h) return null;
+  let bmr;
+  if(body.gender==='erkek') bmr = 10*w + 6.25*h - 5*age + 5;
+  else if(body.gender==='kadin') bmr = 10*w + 6.25*h - 5*age - 161;
+  else bmr = 10*w + 6.25*h - 5*age - 78; // ortalama / belirtilmemiş
+  const calories = Math.round(bmr*1.375); // hafif aktif varsayımı
+  const mlPerKg = body.gender==='erkek'? 35 : body.gender==='kadin'? 31 : 33;
+  const waterMl = Math.round(w*mlPerKg);
+  const waterGlasses = Math.max(1, Math.round(waterMl/250));
+  return {calories, waterMl, waterGlasses};
+}
+async function openTargets(){
+  const body = await sGet('body', false);
+  const settings = (await sGet('settings', false)) || {};
+  const computed = computeTargets(body);
+  const calorieTarget = settings.calorieTarget!=null ? settings.calorieTarget : (computed? computed.calories : null);
+  const waterTarget = settings.waterTarget!=null ? settings.waterTarget : (computed? computed.waterGlasses : 13);
+  const day = await loadDay(S.date);
+  const totalCal = day.calories.reduce((a,x)=>a+Number(x.kcal||0),0);
+  showModal(`
+    <h3 style="margin-bottom:12px;">Hedeflerim</h3>
+    <div class="card" style="background:var(--surface-2);margin-bottom:10px;">
+      <div class="row"><div>Günlük kalori hedefi</div><div><b>${calorieTarget? calorieTarget+' kcal':'Belirlenmedi'}</b></div></div>
+      ${calorieTarget? `
+        <div class="bar-bg" style="margin-top:6px;"><div class="bar-fill" style="width:${Math.min(100,totalCal/calorieTarget*100)}%;background:var(--accent)"></div></div>
+        <div class="muted" style="font-size:12px;margin-top:4px;">Bugün alınan: ${totalCal} kcal</div>`:''}
+      <div class="row" style="margin-top:10px;gap:6px;">
+        <input id="cal-target-input" type="number" inputmode="numeric" placeholder="ör. 2200" style="flex:1;" value="${calorieTarget||''}">
+        <button class="btn-ghost btn-sm" onclick="saveCalorieTarget()">Kaydet</button>
+      </div>
+    </div>
+    <div class="card" style="background:var(--surface-2);">
+      <div class="row"><div>Günlük su hedefi</div><div><b>${waterTarget} bardak (~${(waterTarget*0.25).toFixed(2)} L)</b></div></div>
+      <div class="bar-bg" style="margin-top:6px;"><div class="bar-fill" style="width:${Math.min(100,day.water/waterTarget*100)}%;background:var(--water)"></div></div>
+      <div class="muted" style="font-size:12px;margin-top:4px;">Bugün içilen: ${day.water} bardak</div>
+      <div class="row" style="margin-top:10px;gap:6px;">
+        <input id="water-target-input" type="number" inputmode="numeric" placeholder="ör. 10" style="flex:1;" value="${waterTarget}">
+        <button class="btn-ghost btn-sm" onclick="saveWaterTarget()">Kaydet</button>
+      </div>
+    </div>
+    <p class="muted" style="font-size:11px;margin-top:10px;">${computed? 'Boy/kilo/yaş/cinsiyetine göre otomatik hesaplanan öneri gösteriliyor — istersen üstteki kutulardan kendi hedefini yazıp kaydedebilirsin.' : 'Otomatik öneri için Profil\'de vücut bilgilerini girebilir, ya da doğrudan kendi hedefini yazıp kaydedebilirsin.'}</p>
+  `);
+}
+async function saveCalorieTarget(){
+  const v = Number(document.getElementById('cal-target-input').value) || null;
+  const settings = (await sGet('settings', false)) || {};
+  settings.calorieTarget = v;
+  await sSet('settings', settings, false);
+  openTargets();
+}
+async function saveWaterTarget(){
+  const v = Number(document.getElementById('water-target-input').value) || null;
+  const settings = (await sGet('settings', false)) || {};
+  settings.waterTarget = v;
+  await sSet('settings', settings, false);
+  openTargets();
+}
+async function openWaterTargetEdit(){
+  const settings = (await sGet('settings', false)) || {};
+  const body = await sGet('body', false);
+  const computed = computeTargets(body);
+  const waterTarget = settings.waterTarget!=null ? settings.waterTarget : (computed? computed.waterGlasses : 13);
+  showModal(`
+    <h3 style="margin-bottom:10px;">Su hedefini değiştir</h3>
+    <div class="field"><label>Günlük hedef (bardak)</label><input id="quick-water-input" type="number" inputmode="numeric" value="${waterTarget}"></div>
+    <p class="muted" style="font-size:11.5px;margin-bottom:10px;">1 bardak ≈ 0.25 L olarak hesaplanır.</p>
+    <button class="btn-primary" style="width:100%;" onclick="saveWaterTargetQuick()">Kaydet</button>
+  `);
+}
+async function saveWaterTargetQuick(){
+  const v = Number(document.getElementById('quick-water-input').value) || null;
+  const settings = (await sGet('settings', false)) || {};
+  settings.waterTarget = v;
+  await sSet('settings', settings, false);
+  closeModal();
+}
+function shiftDay(n){
+  const d=new Date(S.date+'T00:00:00'); d.setDate(d.getDate()+n);
+  S.date=todayStr(d); renderDashboard(document.getElementById('content'));
+}
+async function adjWater(n){
+  const day=await loadDay(S.date);
+  day.water=Math.max(0,day.water+n);
+  await saveDay(S.date,day); renderDashboard(document.getElementById('content'));
+}
+function buildWheelCol(id, count, pad, selected){
+  let items='';
+  for(let i=0;i<count;i++){
+    items += `<div class="wheel-item">${pad? String(i).padStart(2,'0') : i}</div>`;
+  }
+  return `<div class="wheel-col" id="${id}">${items}</div>`;
+}
+async function openTimePicker(target){
+  const day = await loadDay(S.date);
+  const current = (day.sleep && day.sleep[target]) || (target==='bed'? '23:00':'07:00');
+  let [ch,cm] = current.split(':').map(Number);
+  showModal(`
+    <h3 style="margin-bottom:6px;">${target==='bed'?'Yattığım saat':'Kalktığım saat'}</h3>
+    <p class="muted" style="font-size:12px;">Saat ve dakikayı kaydırarak seç</p>
+    <div class="wheel-wrap">
+      <div class="wheel-center-line"></div>
+      ${buildWheelCol('wh-hour',24,true,ch)}
+      <div class="wheel-sep">:</div>
+      ${buildWheelCol('wh-min',60,true,cm)}
+    </div>
+    <button class="btn-primary" style="width:100%;" onclick="confirmTimePicker('${target}')">Tamam</button>
+  `);
+  setTimeout(()=>{
+    const hc=document.getElementById('wh-hour'), mc=document.getElementById('wh-min');
+    if(hc) hc.scrollTop = ch*40;
+    if(mc) mc.scrollTop = cm*40;
+  },30);
+}
+async function confirmTimePicker(target){
+  const hc=document.getElementById('wh-hour'), mc=document.getElementById('wh-min');
+  const h = Math.round(hc.scrollTop/40) % 24;
+  const m = Math.round(mc.scrollTop/40) % 60;
+  const value = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+  const day = await loadDay(S.date);
+  day.sleep = day.sleep || {};
+  day.sleep[target] = value;
+  await saveDay(S.date, day);
+  closeModal(); renderDashboard(document.getElementById('content'));
+}
+
+function openManualCal(){
+  showModal(`
+    <h3 style="margin-bottom:12px;">Yemek ekle</h3>
+    <div class="field"><label>Ne yedin?</label><input id="m-name" placeholder="ör. Mercimek çorbası"></div>
+    <div class="field"><label>Kalori (kcal)</label><input id="m-kcal" type="number" inputmode="numeric"></div>
+    <div class="field"><label>Saat</label><input id="m-time" type="time" value="${new Date().toTimeString().slice(0,5)}"></div>
+    <button class="btn-primary" style="width:100%;" onclick="addManualCal()">Ekle</button>
+  `);
+}
+async function addManualCal(){
+  const name=document.getElementById('m-name').value.trim();
+  const kcal=Number(document.getElementById('m-kcal').value)||0;
+  const time=document.getElementById('m-time').value;
+  if(!name){ alert('Bir isim yaz.'); return; }
+  const day=await loadDay(S.date);
+  day.calories.push({id:uid(), name, kcal, time});
+  await saveDay(S.date,day);
+  closeModal(); renderDashboard(document.getElementById('content'));
+}
+
+function openPhotoCal(){
+  showModal(`
+    <h3 style="margin-bottom:12px;">Fotoğraftan kalori tahmini</h3>
+    <p class="muted" style="margin-bottom:10px;">Yemeğinin fotoğrafını seç, yapay zeka tahmini kaloriyi çıkarsın.</p>
+    <input type="file" id="ph-input" accept="image/*" capture="environment">
+    <div id="ph-status" class="muted" style="margin-top:10px;"></div>
+    <div id="ph-result"></div>
+  `);
+  document.getElementById('ph-input').addEventListener('change', handlePhotoCal);
+}
+function resizeImage(file, maxW){
+  return new Promise((resolve)=>{
+    const img=new Image();
+    const reader=new FileReader();
+    reader.onload=e=>{
+      img.onload=()=>{
+        const scale=Math.min(1, maxW/img.width);
+        const canvas=document.createElement('canvas');
+        canvas.width=img.width*scale; canvas.height=img.height*scale;
+        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+        resolve(canvas.toDataURL('image/jpeg',0.65));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+async function handlePhotoCal(ev){
+  const file=ev.target.files[0]; if(!file) return;
+  document.getElementById('ph-status').textContent='Fotoğraf işleniyor…';
+  const dataUrl = await resizeImage(file, 700);
+  S.cache.lastPhoto = dataUrl;
+  document.getElementById('ph-status').textContent='Yapay zeka analiz ediyor…';
+  try{
+    const base64 = dataUrl.split(',')[1];
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:300,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image', source:{type:'base64', media_type:'image/jpeg', data:base64}},
+            {type:'text', text:'Bu fotoğraftaki yemeği tanı ve yaklaşık kalorisini tahmin et. Sadece şu JSON formatında, başka hiçbir açıklama olmadan yanıt ver: {"food_name":"...", "estimated_calories": number, "note":"kısa bir not, örn. porsiyon varsayımı"}. Yanıtın Türkçe olsun.'}
+          ]
+        }]
+      })
+    });
+    const data = await resp.json();
+    const text = (data.content||[]).map(b=>b.text||'').join('');
+    const clean = text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    S.cache.lastEstimate = parsed;
+    document.getElementById('ph-status').textContent='';
+    document.getElementById('ph-result').innerHTML = `
+      <div class="card" style="margin-top:4px;">
+        <img src="${dataUrl}" style="width:100%;border-radius:10px;margin-bottom:8px;">
+        <div class="field"><label>Yemek</label><input id="ai-name" value="${esc(parsed.food_name||'')}"></div>
+        <div class="field"><label>Tahmini kalori</label><input id="ai-kcal" type="number" value="${parsed.estimated_calories||''}"></div>
+        <p class="muted" style="font-size:12px;">${esc(parsed.note||'')} — bu bir tahmindir, düzenleyebilirsin.</p>
+        <button class="btn-primary" style="width:100%;" onclick="confirmAiCal()">Günlüğe ekle</button>
+      </div>`;
+  }catch(e){
+    document.getElementById('ph-status').textContent='Analiz başarısız oldu, elle ekleyebilirsin.';
+  }
+}
+async function confirmAiCal(){
+  const name=document.getElementById('ai-name').value.trim()||'Yemek';
+  const kcal=Number(document.getElementById('ai-kcal').value)||0;
+  const day=await loadDay(S.date);
+  day.calories.push({id:uid(), name, kcal, time:new Date().toTimeString().slice(0,5), ai:true});
+  await saveDay(S.date,day);
+  closeModal(); renderDashboard(document.getElementById('content'));
+}
+
+function openSession(){
+  showModal(`
+    <h3 style="margin-bottom:12px;">Çalışma ekle</h3>
+    <div class="field"><label>Tür</label>
+      <select id="s-kind"><option value="ders">Ders</option><option value="is">İş</option></select>
+    </div>
+    <div class="field"><label>Konu / açıklama</label><input id="s-label" placeholder="ör. Matematik ya da Kargo paketleme"></div>
+    <div class="grid2">
+      <div class="field"><label>Başlangıç</label><input id="s-start" type="time"></div>
+      <div class="field"><label>Bitiş</label><input id="s-end" type="time"></div>
+    </div>
+    <button class="btn-primary" style="width:100%;" onclick="addSession()">Ekle</button>
+  `);
+}
+async function addSession(){
+  const kind=document.getElementById('s-kind').value;
+  const label=document.getElementById('s-label').value.trim();
+  const start=document.getElementById('s-start').value;
+  const end=document.getElementById('s-end').value;
+  if(!start||!end){ alert('Başlangıç ve bitiş saatini gir.'); return; }
+  const day=await loadDay(S.date);
+  day.work.push({id:uid(), label, start, end, kind});
+  await saveDay(S.date,day);
+  closeModal(); renderDashboard(document.getElementById('content'));
+}
+
+async function openMove(){
+  const body = await sGet('body', false);
+  S.cache.moveWeight = (body && body.weight) ? Number(body.weight) : null;
+  S.cache.moveSport = SPORTS[0].id;
+  S.cache.moveMin = '';
+  S.cache.moveKm = '';
+  showModal(moveModalHtml());
+}
+function estimateKcal(sportId, min){
+  const sport = SPORTS.find(s=>s.id===sportId);
+  const w = S.cache.moveWeight;
+  if(!w || !min) return '';
+  return Math.round(sport.met*3.5*w/200*Number(min));
+}
+function moveModalHtml(){
+  const sport = SPORTS.find(s=>s.id===S.cache.moveSport);
+  const initialKcal = estimateKcal(sport.id, S.cache.moveMin);
+  return `
+    <h3 style="margin-bottom:10px;">Aktivite ekle</h3>
+    <div class="sport-grid">
+      ${SPORTS.map(s=>`<div class="sport-btn ${s.id===sport.id?'active':''}" onclick="pickSport('${s.id}')"><span class="ic">${s.icon}</span>${s.label}</div>`).join('')}
+    </div>
+    ${sport.distance? `<div class="field"><label>Mesafe (km)</label><input id="mv-km" type="number" step="0.1" inputmode="decimal" value="${S.cache.moveKm}" oninput="onMoveFieldChange()"></div>`:''}
+    <div class="field"><label>Süre (dakika)</label><input id="mv-min" type="number" inputmode="numeric" value="${S.cache.moveMin}" oninput="onMoveFieldChange()"></div>
+    <div class="field"><label>Tahmini kalori</label><input id="mv-kcal" type="number" inputmode="numeric" value="${initialKcal}"></div>
+    <button class="btn-primary" style="width:100%;" onclick="addMove()">Ekle</button>
+    <p class="muted" style="font-size:11px;margin-top:8px;">Bu bir tahmindir — şu an akıllı bir bileklik/saatten veri almıyoruz. Süreyi girdiğinde kalori otomatik hesaplanır, ama sen de dilediğin gibi değiştirebilirsin.</p>
+  `;
+}
+function pickSport(id){
+  const minEl=document.getElementById('mv-min'), kmEl=document.getElementById('mv-km');
+  if(minEl) S.cache.moveMin = minEl.value;
+  if(kmEl) S.cache.moveKm = kmEl.value;
+  S.cache.moveSport = id;
+  updateModalContent(moveModalHtml());
+}
+function onMoveFieldChange(){
+  const minEl=document.getElementById('mv-min'), kmEl=document.getElementById('mv-km');
+  S.cache.moveMin = minEl? minEl.value : '';
+  S.cache.moveKm = kmEl? kmEl.value : '';
+  const est = estimateKcal(S.cache.moveSport, S.cache.moveMin);
+  const kcalEl = document.getElementById('mv-kcal');
+  if(kcalEl && est!=='') kcalEl.value = est;
+}
+async function addMove(){
+  const sport = SPORTS.find(s=>s.id===S.cache.moveSport);
+  const min = Number(document.getElementById('mv-min').value)||0;
+  const kmField = document.getElementById('mv-km');
+  const km = kmField? (Number(kmField.value)||0) : 0;
+  if(!min){ alert('Süreyi gir.'); return; }
+  const kcalVal = document.getElementById('mv-kcal').value;
+  const kcal = kcalVal!==''? Number(kcalVal) : null;
+  const day = await loadDay(S.date);
+  day.moves.push({id:uid(), type:sport.id, label:sport.label, icon:sport.icon, min, km: sport.distance? km: null, kcal});
+  await saveDay(S.date,day);
+  closeModal(); renderDashboard(document.getElementById('content'));
+}
+
+// ================= FEED =================
+async function renderFeed(c){
+  c.innerHTML='<div class="empty">Yükleniyor…</div>';
+  let index = await sGet('feed_index', true) || [];
+  const posts = [];
+  for(const id of index.slice(0,30)){
+    const p = await sGet('post:'+id, true);
+    if(p) posts.push(p);
+  }
+  c.innerHTML = `
+    <button class="btn-primary" style="width:100%;margin-bottom:14px;" onclick="openNewPost()">＋ Yeni gönderi</button>
+    ${posts.length? posts.map(postCard).join(''): '<div class="empty">Henüz gönderi yok. İlk paylaşımı sen yap!</div>'}
+  `;
+}
+function postCard(p){
+  const you = S.user.username;
+  const liked = (p.likes||[]).includes(you);
+  const cap = truncateWords(p.caption, CAPTION_WORD_LIMIT);
+  const comments = p.comments||[];
+  const visibleComments = comments.slice(-2);
+  const hiddenCount = comments.length - visibleComments.length;
+  return `
+    <div class="post">
+      <div class="head">
+        ${avatarHtml(p,32)}
+        <div><div style="font-size:13.5px;font-weight:600;">${esc(p.displayName)}</div><div class="muted" style="font-size:11px;">${timeAgo(p.ts)}</div></div>
+      </div>
+      ${p.image? `<img src="${p.image}" onclick="openPostDetail('${p.id}')" style="cursor:pointer;">`:''}
+      <div class="body">
+        ${cap.short? `<div style="font-size:14px;margin-bottom:6px;">${esc(cap.short)}</div>`:''}
+        ${cap.truncated? `<div class="read-more" onclick="openPostDetail('${p.id}')">Devamını oku</div>`:''}
+        <div class="row" style="margin:8px 0 4px;">
+          <button class="btn-ghost btn-sm" onclick="toggleLike('${p.id}')">${liked?'❤️':'🤍'} ${(p.likes||[]).length}</button>
+          <span class="muted" style="font-size:12px;">${comments.length} yorum</span>
+        </div>
+        ${visibleComments.map(cm=>`<div class="comment"><b>${esc(cm.displayName)}:</b> ${esc(cm.text)}</div>`).join('')}
+        ${hiddenCount>0? `<div class="read-more" onclick="openPostDetail('${p.id}')">${hiddenCount} yorum daha gör</div>`:''}
+        <div class="row" style="margin-top:8px;gap:6px;">
+          <input id="cm-${p.id}" placeholder="Yorum yaz…" style="flex:1;">
+          <button class="btn-ghost btn-sm" onclick="addComment('${p.id}')">Gönder</button>
+        </div>
+      </div>
+    </div>`;
+}
+function timeAgo(ts){
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60) return 'şimdi';
+  if(s<3600) return Math.floor(s/60)+' dk önce';
+  if(s<86400) return Math.floor(s/3600)+' sa önce';
+  return Math.floor(s/86400)+' gün önce';
+}
+function openNewPost(){
+  showModal(`
+    <h3 style="margin-bottom:12px;">Yeni gönderi</h3>
+    <input type="file" id="post-file" accept="image/*">
+    <div class="field" style="margin-top:10px;"><label>Açıklama</label><textarea id="post-caption" rows="3" placeholder="Bugün ne yaptın?"></textarea></div>
+    <p class="muted" style="font-size:11.5px;margin-top:-4px;margin-bottom:10px;">Akışta ilk ${CAPTION_WORD_LIMIT} kelime gösterilir, devamı "Devamını oku" ile açılır — istediğin kadar uzun yazabilirsin.</p>
+    <button class="btn-primary" style="width:100%;" onclick="publishPost()">Paylaş</button>
+  `);
+}
+async function publishPost(){
+  const file = document.getElementById('post-file').files[0];
+  const caption = document.getElementById('post-caption').value.trim();
+  let image = null;
+  if(file) image = await resizeImage(file, 800);
+  const id = uid();
+  const post = {id, username:S.user.username, displayName:S.user.displayName, avatar:S.user.avatar, photo:S.user.photo, image, caption, ts:Date.now(), likes:[], comments:[]};
+  await sSet('post:'+id, post, true);
+  let index = await sGet('feed_index', true) || [];
+  index.unshift(id); index = index.slice(0,200);
+  await sSet('feed_index', index, true);
+  closeModal(); renderFeed(document.getElementById('content'));
+}
+async function toggleLike(id){
+  const p = await sGet('post:'+id, true); if(!p) return;
+  p.likes = p.likes||[];
+  const you=S.user.username;
+  if(p.likes.includes(you)) p.likes=p.likes.filter(u=>u!==you); else p.likes.push(you);
+  await sSet('post:'+id, p, true);
+  renderFeed(document.getElementById('content'));
+}
+async function addComment(id){
+  const input=document.getElementById('cm-'+id);
+  const text=input.value.trim(); if(!text) return;
+  const p = await sGet('post:'+id, true); if(!p) return;
+  p.comments = p.comments||[];
+  p.comments.push({username:S.user.username, displayName:S.user.displayName, text, ts:Date.now()});
+  await sSet('post:'+id, p, true);
+  renderFeed(document.getElementById('content'));
+}
+
+async function openPostDetail(id){
+  const p = await sGet('post:'+id, true); if(!p) return;
+  showModal(postDetailHtml(p));
+}
+function postDetailHtml(p){
+  const liked = (p.likes||[]).includes(S.user.username);
+  const comments = p.comments||[];
+  return `
+    ${avatarHtml(p,32)}
+    <div style="display:inline-block;vertical-align:middle;margin-left:8px;margin-bottom:10px;">
+      <div style="font-size:13.5px;font-weight:600;">${esc(p.displayName)}</div>
+      <div class="muted" style="font-size:11px;">${timeAgo(p.ts)}</div>
+    </div>
+    ${p.image? `<img src="${p.image}" style="width:100%;border-radius:10px;margin-bottom:10px;">`:''}
+    ${p.caption? `<div style="font-size:14px;margin-bottom:10px;white-space:pre-wrap;">${esc(p.caption)}</div>`:''}
+    <button class="btn-ghost btn-sm" onclick="detailLike('${p.id}')">${liked?'❤️':'🤍'} ${(p.likes||[]).length}</button>
+    <div style="margin-top:12px;">
+      ${comments.length? comments.map(cm=>`<div class="comment"><b>${esc(cm.displayName)}:</b> ${esc(cm.text)}</div>`).join(''): '<div class="empty">Henüz yorum yok</div>'}
+    </div>
+    <div class="row" style="margin-top:10px;gap:6px;">
+      <input id="detail-cm-${p.id}" placeholder="Yorum yaz…" style="flex:1;">
+      <button class="btn-ghost btn-sm" onclick="detailComment('${p.id}')">Gönder</button>
+    </div>
+  `;
+}
+function updateModalContent(html){
+  const modal = document.querySelector('#modal-bg .modal');
+  if(modal) modal.innerHTML = html + '<div class="close-x" onclick="closeModal()">✕</div>';
+}
+async function detailLike(id){
+  const p = await sGet('post:'+id, true); if(!p) return;
+  p.likes = p.likes||[];
+  const you=S.user.username;
+  if(p.likes.includes(you)) p.likes=p.likes.filter(u=>u!==you); else p.likes.push(you);
+  await sSet('post:'+id, p, true);
+  updateModalContent(postDetailHtml(p));
+}
+async function detailComment(id){
+  const input=document.getElementById('detail-cm-'+id);
+  const text=input.value.trim(); if(!text) return;
+  const p = await sGet('post:'+id, true); if(!p) return;
+  p.comments = p.comments||[];
+  p.comments.push({username:S.user.username, displayName:S.user.displayName, text, ts:Date.now()});
+  await sSet('post:'+id, p, true);
+  updateModalContent(postDetailHtml(p));
+}
+
+// ================= FRIENDS =================
+async function getSocial(username){
+  return (await sGet('social:'+username, true)) || {following:[], followers:[]};
+}
+async function renderFriends(c){
+  c.innerHTML='<div class="empty">Yükleniyor…</div>';
+  const social = await getSocial(S.user.username);
+  const followingDetails = [];
+  for(const u of social.following){
+    const info = await sGet('user:'+u, true);
+    if(info) followingDetails.push({username:u, ...info});
+  }
+  c.innerHTML = `
+    <div class="card">
+      <h3>Arkadaş ekle</h3>
+      <div class="row" style="gap:8px;margin-top:8px;">
+        <input id="add-friend" placeholder="kullanıcı adı">
+        <button class="btn-primary btn-sm" onclick="addFriend()">Takip et</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Takip ettiklerin (${followingDetails.length})</h3>
+      ${followingDetails.length? followingDetails.map(f=>`
+        <div class="list-item">
+          <div class="row" style="gap:8px;">${avatarHtml(f,26)}${esc(f.displayName)}</div>
+          <button class="btn-ghost btn-sm" onclick="openChat('${f.username}')">Mesaj</button>
+        </div>`).join(''): '<div class="empty">Henüz kimseyi takip etmiyorsun</div>'}
+    </div>
+    <div class="card">
+      <h3>Takipçilerin (${social.followers.length})</h3>
+      ${social.followers.length? social.followers.map(u=>`<div class="list-item"><div>${esc(u)}</div></div>`).join(''): '<div class="empty">Henüz takipçin yok</div>'}
+    </div>
+  `;
+}
+async function addFriend(){
+  const uname = document.getElementById('add-friend').value.trim().toLowerCase();
+  if(!uname || uname===S.user.username) return;
+  const target = await sGet('user:'+uname, true);
+  if(!target){ alert('Bu kullanıcı adı bulunamadı.'); return; }
+  const my = await getSocial(S.user.username);
+  if(!my.following.includes(uname)){ my.following.push(uname); await sSet('social:'+S.user.username, my, true); }
+  const their = await getSocial(uname);
+  if(!their.followers.includes(S.user.username)){ their.followers.push(S.user.username); await sSet('social:'+uname, their, true); }
+  renderFriends(document.getElementById('content'));
+}
+
+// ================= CHAT (24h auto-delete) =================
+function roomId(a,b){ return [a,b].sort().join('__'); }
+async function loadRoom(a,b){
+  const key='chat:'+roomId(a,b);
+  let msgs = await sGet(key, true) || [];
+  const cutoff = Date.now() - 24*3600*1000;
+  const fresh = msgs.filter(m=>m.ts>cutoff);
+  if(fresh.length!==msgs.length) await sSet(key, fresh, true);
+  return fresh;
+}
+async function renderChatList(c){
+  const social = await getSocial(S.user.username);
+  const contacts = Array.from(new Set([...social.following, ...social.followers]));
+  const details=[];
+  for(const u of contacts){ const info=await sGet('user:'+u,true); if(info) details.push({username:u,...info}); }
+  c.innerHTML = `
+    <div class="card" style="padding:10px 14px;"><p class="muted" style="font-size:12px;">Özel mesajlar 24 saat sonra otomatik silinir.</p></div>
+    ${details.length? details.map(d=>`
+      <div class="card" style="cursor:pointer;" onclick="openChat('${d.username}')">
+        <div class="row" style="gap:8px;">${avatarHtml(d,32)}<div>${esc(d.displayName)}</div></div>
+      </div>`).join(''): '<div class="empty">Sohbet için önce Kişiler sekmesinden birini takip et.</div>'}
+  `;
+}
+async function openChat(username){
+  S.chatWith = username;
+  const c = document.getElementById('content');
+  c.innerHTML = `<div class="empty">Yükleniyor…</div>`;
+  const info = await sGet('user:'+username, true);
+  const msgs = await loadRoom(S.user.username, username);
+  c.innerHTML = `
+    <button class="btn-ghost btn-sm" onclick="switchView('chat')">‹ Geri</button>
+    <h3 style="margin:12px 0;">${esc(info? info.displayName: username)}</h3>
+    <div id="chat-box" style="display:flex;flex-direction:column;margin-bottom:10px;">
+      ${msgs.length? msgs.map(m=>`<div class="chat-bubble ${m.from===S.user.username?'chat-me':'chat-them'}">${esc(m.text)}</div>`).join(''): '<div class="empty">Henüz mesaj yok</div>'}
+    </div>
+    <div class="row" style="gap:6px;">
+      <input id="chat-input" placeholder="Mesaj yaz…">
+      <button class="btn-primary btn-sm" onclick="sendChat()">Gönder</button>
+    </div>
+  `;
+}
+async function sendChat(){
+  const input=document.getElementById('chat-input');
+  const text=input.value.trim(); if(!text) return;
+  const key='chat:'+roomId(S.user.username, S.chatWith);
+  const msgs = await loadRoom(S.user.username, S.chatWith);
+  msgs.push({from:S.user.username, text, ts:Date.now()});
+  await sSet(key, msgs, true);
+  openChat(S.chatWith);
+}
+
+// ================= PROFILE =================
+async function renderProfile(c){
+  c.innerHTML = `<div class="empty">Yükleniyor…</div>`;
+  let index = await sGet('feed_index', true) || [];
+  const myPosts = [];
+  for(const id of index){
+    const p = await sGet('post:'+id, true);
+    if(p && p.username===S.user.username) myPosts.push(p);
+  }
+  const body = (await sGet('body', false)) || {};
+  const adminUsername = await sGet('admin_username', true);
+  const isAdmin = adminUsername === S.user.username;
+  c.innerHTML = `
+    <div class="card">
+      <div class="row" style="gap:10px;">
+        <div class="avatar-edit">
+          ${avatarHtml(S.user,44)}
+          <div class="pencil" onclick="document.getElementById('avatar-file').click()">✎</div>
+          <input type="file" id="avatar-file" accept="image/*" style="display:none;" onchange="updateProfilePhoto(event)">
+        </div>
+        <div><div style="font-weight:600;">${esc(S.user.displayName)}</div><div class="muted">@${esc(S.user.username)}</div></div>
+      </div>
+    </div>
+    ${isAdmin? `
+    <div class="card" style="border-color:var(--accent);">
+      <h3 style="margin-bottom:6px;">🛠️ Yönetici</h3>
+      <p class="muted" style="font-size:12.5px;margin-bottom:10px;">Bu hesap sitede ilk kayıt olan hesap olduğu için yönetici yetkisine sahip.</p>
+      <button class="btn-primary btn-sm" style="width:100%;" onclick="switchView('admin')">Kullanıcıları görüntüle</button>
+    </div>`:''}
+    <div class="card">
+      <h3 style="margin-bottom:10px;">Vücut bilgileri</h3>
+      <div class="grid2">
+        <div class="field"><label>Boy (cm)</label><input id="b-height" type="number" inputmode="numeric" value="${body.height||''}"></div>
+        <div class="field"><label>Kilo (kg)</label><input id="b-weight" type="number" inputmode="numeric" value="${body.weight||''}"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Yaş</label><input id="b-age" type="number" inputmode="numeric" value="${body.age||''}"></div>
+        <div class="field"><label>Cinsiyet</label>
+          <select id="b-gender">
+            <option value="erkek" ${body.gender==='erkek'?'selected':''}>Erkek</option>
+            <option value="kadin" ${body.gender==='kadin'?'selected':''}>Kadın</option>
+            <option value="none" ${(!body.gender||body.gender==='none')?'selected':''}>Belirtmek istemiyorum</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-ghost btn-sm" onclick="saveBody()">Kaydet</button>
+      <p class="muted" style="font-size:11px;margin-top:8px;">Bu bilgiler yalnızca kalori/su hedefini hesaplamak için kullanılır, yalnızca sana özeldir ve kimseyle paylaşılmaz.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:10px;">Gönderilerim (${myPosts.length})</h3>
+      ${myPosts.length? `<div class="my-posts-grid">${myPosts.map(p=>`
+        <div class="thumb" onclick="openPostDetail('${p.id}')">
+          ${p.image? `<img src="${p.image}">`: `<div class="no-img">${esc((p.caption||'').slice(0,40))}</div>`}
+        </div>`).join('')}</div>` : '<div class="empty">Henüz gönderi paylaşmadın</div>'}
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:8px;">Hakkında</h3>
+      <p class="muted" style="font-size:12.5px;line-height:1.5;">Bu uygulama tek bir Artifact içinde çalışan bir prototiptir. Kişisel takip verilerin (kalori, uyku, su, çalışma, spor, vücut bilgilerin) yalnızca sana özeldir. Gönderiler, arkadaşlıklar, mesajlar ve hesap dizini (kullanıcı adı, e-posta, ad) ise bu uygulamayı kullanan herkesin eriştiği ortak bir alanda tutulur — gerçek bir üretim uygulamasında bunun yerine güvenli bir sunucu ve kimlik doğrulama olurdu.</p>
+    </div>
+    <button class="btn-ghost" style="width:100%;" onclick="doLogout()">Çıkış yap</button>
+  `;
+}
+async function saveBody(){
+  const bodyData = {
+    height: Number(document.getElementById('b-height').value)||null,
+    weight: Number(document.getElementById('b-weight').value)||null,
+    age: Number(document.getElementById('b-age').value)||null,
+    gender: document.getElementById('b-gender').value
+  };
+  await sSet('body', bodyData, false);
+  renderProfile(document.getElementById('content'));
+}
+async function updateProfilePhoto(ev){
+  const file = ev.target.files[0]; if(!file) return;
+  const photo = await resizeFileToDataUrl(file, 220, 0.75);
+  S.user.photo = photo;
+  await sSet('me', S.user, false);
+  const entry = (await sGet('user:'+S.user.username, true)) || {};
+  entry.photo = photo; entry.displayName = S.user.displayName; entry.avatar = S.user.avatar;
+  await sSet('user:'+S.user.username, entry, true);
+  renderProfile(document.getElementById('content'));
+}
+
+// ================= ADMIN =================
+async function renderAdmin(c){
+  c.innerHTML = `<div class="empty">Yükleniyor…</div>`;
+  const adminUsername = await sGet('admin_username', true);
+  if(adminUsername !== S.user.username){
+    c.innerHTML = `<div class="empty">Bu bölüme erişim yetkin yok.</div>`;
+    return;
+  }
+  const keys = await sList('user:', true);
+  const users = [];
+  for(const key of keys){
+    const uname = key.slice('user:'.length);
+    const info = await sGet(key, true);
+    if(info) users.push({username: uname, ...info});
+  }
+  users.sort((a,b)=>(b.joinedAt||0)-(a.joinedAt||0));
+  c.innerHTML = `
+    <button class="btn-ghost btn-sm" onclick="switchView('profile')">‹ Geri</button>
+    <h3 style="margin:12px 0 4px;">Kayıtlı kullanıcılar (${users.length})</h3>
+    <p class="muted" style="font-size:11.5px;margin-bottom:12px;">Bu paneli yalnızca sen görebiliyorsun çünkü siteye ilk kayıt olan hesap sensin.</p>
+    ${users.map(u=>`
+      <div class="card">
+        <div class="row" style="gap:10px;align-items:flex-start;">
+          ${avatarHtml(u,36)}
+          <div style="flex:1;">
+            <div style="font-weight:600;">${esc(u.displayName)} ${u.username===S.user.username? '<span class="tag">sen</span>':''}</div>
+            <div class="muted" style="font-size:12px;">@${esc(u.username)}</div>
+            <div class="muted" style="font-size:12px;">${esc(u.email||'e-posta yok')}</div>
+            <div class="muted" style="font-size:11px;">Katılım: ${u.joinedAt? new Date(u.joinedAt).toLocaleDateString('tr-TR'):'—'}</div>
+          </div>
+          <button class="btn-ghost btn-sm" onclick="openRenameUser('${u.username}')">✎ Ad değiştir</button>
+        </div>
+      </div>
+    `).join('')}
+    <p class="muted" style="font-size:11px;margin-top:6px;">Not: Kullanıcı adı değişince o kullanıcının geçmiş gönderileri ve arkadaşlıkları üzerinde eski adı görünmeye devam edebilir — bu, sunucusuz çalışan bir prototip sınırlamasıdır.</p>
+  `;
+}
+function openRenameUser(oldUsername){
+  showModal(`
+    <h3 style="margin-bottom:10px;">Kullanıcı adını değiştir</h3>
+    <div class="field"><label>Yeni kullanıcı adı (en az 4 karakter)</label><input id="rename-input" value="${esc(oldUsername)}"></div>
+    <button class="btn-primary" style="width:100%;" onclick="confirmRenameUser('${oldUsername}')">Kaydet</button>
+  `);
+}
+async function confirmRenameUser(oldUsername){
+  const newUsername = document.getElementById('rename-input').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  if(!newUsername || newUsername.length<4){ alert('Kullanıcı adı en az 4 karakter olmalı.'); return; }
+  if(newUsername===oldUsername){ closeModal(); return; }
+  const taken = await sGet('user:'+newUsername, true);
+  if(taken){ alert('Bu kullanıcı adı zaten kullanılıyor.'); return; }
+  const entry = await sGet('user:'+oldUsername, true);
+  if(!entry){ alert('Kullanıcı bulunamadı.'); return; }
+  await sSet('user:'+newUsername, entry, true);
+  await sDel('user:'+oldUsername, true);
+  const adminUsername = await sGet('admin_username', true);
+  if(adminUsername===oldUsername) await sSet('admin_username', newUsername, true);
+  if(S.user.username===oldUsername){
+    S.user.username = newUsername;
+    await sSet('me', S.user, false);
+  }
+  closeModal(); renderAdmin(document.getElementById('content'));
+}
+
+// ================= MODAL =================
+function showModal(html){
+  const bg=document.createElement('div');
+  bg.className='modal-bg'; bg.id='modal-bg';
+  bg.innerHTML=`<div class="modal" style="position:relative;">${html}<div class="close-x" onclick="closeModal()">✕</div></div>`;
+  bg.addEventListener('click', e=>{ if(e.target.id==='modal-bg') closeModal(); });
+  document.body.appendChild(bg);
+}
+function closeModal(){ const m=document.getElementById('modal-bg'); if(m) m.remove(); renderView(); }
+
+boot();
 </script>
 </body>
 </html>
