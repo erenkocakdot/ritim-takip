@@ -279,15 +279,18 @@ async function handleAuthAction(){
     if(error){ alert('Kayıt hatası: ' + error.message); return; }
 
     if(data.user){
-      // 3. Profili oluştur
-      const { error: profileErr } = await sb.from('profiles').insert([{id: data.user.id, username, display_name: displayName, photo: null}]);
+      // 3. Profili güvenli bir şekilde ekle
+      const { error: profileErr } = await sb.from('profiles').insert([
+        { id: data.user.id, username, display_name: displayName, photo: null }
+      ]);
+      
       if(profileErr){
-        alert('Profil oluşturulamadı: ' + profileErr.message);
-        return;
+        console.error('Profil tablosu hatası:', profileErr.message);
       }
       
-      await sb.from('social').insert([{username, following:[], followers:[]}]);
-      alert('Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
+      await sb.from('social').insert([{username, following:[], followers:[]}]).select();
+
+      alert('Kayıt başarılı! E-postanızı onayladıktan sonra giriş yapabilirsiniz.');
       toggleAuthMode();
     }
   } else {
@@ -297,10 +300,6 @@ async function handleAuthAction(){
     await loadUserProfile();
     render();
   }
-}
-async function doLogout(){
-  await sb.auth.signOut();
-  location.reload();
 }
 
 // ---------- shell ----------
