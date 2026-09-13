@@ -253,7 +253,7 @@ function renderLogin(){
         <div class="field"><label>E-posta</label><input id="in-email" type="email" autocomplete="email" placeholder="ör. eren@mail.com"></div>
         <div class="field"><label>Şifre</label><input id="in-password" type="password" autocomplete="current-password" minlength="6" placeholder="En az 6 karakter"></div>
         <button id="auth-submit" class="btn-primary" style="width:100%;margin-top:6px;" onclick="submitAuth()">Giriş yap</button>
-        <p id="auth-error" class="auth-error">${supabaseReady?'':'Supabase URL ve anon key değerlerini kodun başına ekleyin.'}</p>
+        <p id="auth-error" class="auth-error">${supabaseReady?'':''}</p>
       </div>
     </div>`;
 }
