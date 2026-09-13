@@ -117,30 +117,15 @@
 <body>
 <div id="root"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script>
+// Supabase Dashboard > Project Settings > API bölümündeki değerleri girin.
+// Anon key tarayıcıda kullanılmak üzere tasarlanmıştır; güvenliği supabase.sql içindeki RLS kuralları sağlar.
 const SUPABASE_URL = 'https://umgfogfuljroiqvkyugd.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_b4YGCNNdgl44Ue95MTr2Ew_Tc537pzV';
-
-const supabaseReady =
-  !SUPABASE_URL.startsWith('YOUR_') &&
-  !SUPABASE_ANON_KEY.startsWith('YOUR_');
-
-const db = supabaseReady
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
-
+const supabaseReady = !SUPABASE_URL.startsWith('YOUR_') && !SUPABASE_ANON_KEY.startsWith('YOUR_');
+const db = supabaseReady ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 const root = document.getElementById('root');
-const S = {
-  user: null,
-  authUser: null,
-  view: 'dashboard',
-  date: todayStr(),
-  chatWith: null,
-  cache: {},
-  authMode: 'login'
-};
+const S = { user:null, authUser:null, view:'dashboard', date: todayStr(), chatWith:null, cache:{}, authMode:'login' };
 
 function todayStr(d){ const x=d?new Date(d):new Date(); return x.toISOString().slice(0,10); }
 function fmtDateLabel(ds){
@@ -237,9 +222,25 @@ async function sDel(key, shared){
 // ---------- boot ----------
 async function boot(){
   if(!db){ renderLogin(); return; }
-  const {data:{session}}=await db.auth.getSession();
-  if(session) await completeSession(session.user); else renderLogin();
-  db.auth.onAuthStateChange((_event,session)=>{ if(!session){ S.user=null; S.authUser=null; renderLogin(); } });
+  try{
+    const query=new URLSearchParams(location.search);
+    const code=query.get('code');
+    if(code){
+      const {error}=await db.auth.exchangeCodeForSession(code);
+      if(error) throw error;
+      history.replaceState({},document.title,location.pathname);
+    }
+    const {data:{session},error}=await db.auth.getSession();
+    if(error) throw error;
+    if(session) await completeSession(session.user);
+    else renderLogin(query.get('error_description')||'');
+  }catch(error){
+    renderLogin('Doğrulama bağlantısı işlenemedi: '+error.message);
+  }
+  db.auth.onAuthStateChange((event,session)=>{
+    if(event==='SIGNED_IN'&&session&&(!S.authUser||S.authUser.id!==session.user.id)) completeSession(session.user);
+    if(event==='SIGNED_OUT'||!session){ S.user=null; S.authUser=null; renderLogin(); }
+  });
 }
 async function completeSession(authUser){
   S.authUser=authUser;
@@ -253,7 +254,7 @@ async function ensureDirectory(me){
   if(!entry) await sSet('user:'+me.username, {displayName: me.displayName, photo: me.photo||null, email: me.email||null, joinedAt: Date.now()}, true);
 }
 
-function renderLogin(){
+function renderLogin(message=''){
   root.innerHTML = `
     <div class="login-wrap">
       <h1>Ritim</h1>
@@ -267,8 +268,8 @@ function renderLogin(){
         </div>
         <div class="field"><label>E-posta</label><input id="in-email" type="email" autocomplete="email" placeholder="ör. eren@mail.com"></div>
         <div class="field"><label>Şifre</label><input id="in-password" type="password" autocomplete="current-password" minlength="6" placeholder="En az 6 karakter"></div>
-        <button id="auth-submit" class="btn-primary" style="width:100%;margin-top:6px;" onclick="submitAuth()">Giriş yap</button>
-        <p id="auth-error" class="auth-error">${supabaseReady?'':''}</p>
+        <button type="button" id="auth-submit" class="btn-primary" style="width:100%;margin-top:6px;" onclick="submitAuth()">Giriş yap</button>
+        <p id="auth-error" class="auth-error">${esc(message||(supabaseReady?'':'Supabase URL ve publishable key değerlerini kodun başına ekleyin.'))}</p>
       </div>
     </div>`;
 }
@@ -285,9 +286,14 @@ async function doLogin(){
   if(!db){ showAuthError('Önce Supabase bağlantı bilgilerini ekleyin.'); return; }
   const email=document.getElementById('in-email').value.trim();
   const password=document.getElementById('in-password').value;
-  const {data,error}=await db.auth.signInWithPassword({email,password});
-  if(error){ showAuthError('Giriş yapılamadı: '+error.message); return; }
-  await completeSession(data.user);
+  if(!email||!password){ showAuthError('E-posta ve şifreni gir.'); return; }
+  setAuthLoading(true);
+  try{
+    const {data,error}=await db.auth.signInWithPassword({email,password});
+    if(error) throw error;
+    await completeSession(data.user);
+  }catch(error){ showAuthError('Giriş yapılamadı: '+authErrorTr(error.message)); }
+  finally{ setAuthLoading(false); }
 }
 async function doRegister(){
   if(!db){ showAuthError('Önce Supabase bağlantı bilgilerini ekleyin.'); return; }
@@ -301,12 +307,29 @@ async function doRegister(){
   const photoFile = document.getElementById('in-photo').files[0];
   let photo = null;
   if(photoFile) photo = await resizeFileToDataUrl(photoFile, 220, 0.75);
-  const {data,error}=await db.auth.signUp({email,password,options:{data:{username,display_name:displayName,photo_url:photo}}});
-  if(error){ showAuthError('Kayıt oluşturulamadı: '+error.message); return; }
-  if(data.session) await completeSession(data.user);
-  else { S.authMode='login'; renderLogin(); showAuthError('Hesap oluşturuldu. E-postanı doğruladıktan sonra giriş yapabilirsin.'); }
+  setAuthLoading(true);
+  try{
+    const redirectTo=location.origin+location.pathname;
+    const {data,error}=await db.auth.signUp({email,password,options:{emailRedirectTo:redirectTo,data:{username,display_name:displayName,photo_url:photo}}});
+    if(error) throw error;
+    if(data.session) await completeSession(data.user);
+    else { S.authMode='login'; renderLogin('Hesap oluşturuldu. E-postandaki doğrulama bağlantısına tıkla, ardından giriş yap.'); }
+  }catch(error){ showAuthError('Kayıt oluşturulamadı: '+authErrorTr(error.message)); }
+  finally{ setAuthLoading(false); }
 }
 function showAuthError(message){ const el=document.getElementById('auth-error'); if(el) el.textContent=message; }
+function setAuthLoading(loading){
+  const btn=document.getElementById('auth-submit'); if(!btn) return;
+  btn.disabled=loading; btn.style.opacity=loading?'.65':'1';
+  btn.textContent=loading?'Lütfen bekle…':(S.authMode==='login'?'Giriş yap':'Hesap oluştur');
+}
+function authErrorTr(message){
+  const m=(message||'').toLowerCase();
+  if(m.includes('invalid login credentials')) return 'E-posta veya şifre yanlış.';
+  if(m.includes('email not confirmed')) return 'Önce e-postandaki doğrulama bağlantısına tıkla.';
+  if(m.includes('user already registered')) return 'Bu e-posta zaten kayıtlı. Giriş yapmayı dene.';
+  return message||'Bilinmeyen bir hata oluştu.';
+}
 async function doLogout(){
   if(db) await db.auth.signOut();
   S.user=null; S.authUser=null; renderLogin();
