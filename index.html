@@ -229,16 +229,17 @@ async function doLogin() {
   const password = document.getElementById('li-pass').value;
   if(!email || !password) return alert("Lütfen tüm alanları doldurun.");
 
-  const { data, error } = await window.supabase.auth.signInWithPassword({ email, password });
-  if (error) {
+  try {
+    const { data, error } = await window.supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    
+    S.user = data.user;
+    await loadProfile();
+    renderApp();
+  } catch (error) {
     if(error.message.includes('Email not confirmed')) alert("Önce e-postanıza gelen onay linkine tıklayın.");
     else alert("Giriş başarısız: " + error.message);
-    return;
   }
-  
-  S.user = data.user;
-  await loadProfile();
-  renderApp();
 }
 
 async function doRegister() {
