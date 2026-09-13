@@ -294,10 +294,14 @@ async function handleAuthAction(){
       toggleAuthMode();
     }
   } else {
+    } else {
     const {data, error} = await sb.auth.signInWithPassword({email, password: pass});
     if(error){ alert('Giriş başarısız: ' + error.message); return; }
     S.user = data.user;
+    
+    // Profili ve kullanıcı adını sisteme yükle
     await loadUserProfile();
+    
     render();
   }
 }
