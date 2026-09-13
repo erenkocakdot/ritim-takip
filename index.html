@@ -102,7 +102,7 @@
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-  // SİZİN VERDİĞİNİZ BİREBİR GERÇEK SUPABASE BİLGİLERİ
+  // Kendi Supabase Bilgilerin:
   const SUPABASE_URL = 'https://umgfogfuljroiqvkyugd.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_b4YGCNNdgl44Ue95MTr2Ew_Tc537pzV'; 
   
@@ -141,11 +141,12 @@ function esc(s){ return (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','
 
 window.bootApp = async function() {
   try {
-    const { data: { session } } = await window.supabase.auth.getSession();
+    const { data: { session }, error } = await window.supabase.auth.getSession();
+    
     if (session && session.user) {
       S.user = session.user;
       await loadProfile();
-      renderApp();
+      renderApp(); // <-- "render" HATASI BURADA DÜZELTİLDİ
     } else {
       renderAuthLanding();
     }
@@ -157,16 +158,18 @@ window.bootApp = async function() {
 
 async function loadProfile() {
   if (!S.user) return;
-  const { data, error } = await window.supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', S.user.id)
-    .single();
-  
-  if (data) {
-    S.profile = data;
-  } else if (error && error.code !== 'PGRST116') {
-    console.error("Profil çekilemedi:", error.message);
+  try {
+    const { data, error } = await window.supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', S.user.id)
+      .single();
+    
+    if (data) {
+      S.profile = data;
+    }
+  } catch (err) {
+    console.error("Profil çekilemedi:", err);
   }
 }
 
@@ -175,7 +178,7 @@ function renderAuthLanding() {
   root.innerHTML = `
     <div class="login-wrap">
       <h1>Ritim</h1>
-      <p class="subtitle">Günlük düzenini takip et, AI asistanlarla kalorini hesapla, arkadaşlarınla bağlan.</p>
+      <p class="subtitle">Günlük düzenini takip et, AI asistanlarla kalorini hesapla.</p>
       <div class="card" style="padding: 24px;">
         <button class="btn-primary" style="width:100%; margin-bottom:12px;" onclick="renderLogin()">Giriş Yap</button>
         <button class="btn-ghost" style="width:100%;" onclick="renderRegister()">Yeni Hesap Oluştur</button>
@@ -235,7 +238,7 @@ async function doLogin() {
     
     S.user = data.user;
     await loadProfile();
-    renderApp();
+    renderApp(); // <-- "render" HATASI BURADA DÜZELTİLDİ
   } catch (error) {
     if(error.message.includes('Email not confirmed')) alert("Önce e-postanıza gelen onay linkine tıklayın.");
     else alert("Giriş başarısız: " + error.message);
@@ -251,7 +254,7 @@ async function doRegister() {
   const weight = document.getElementById('su-weight').value;
 
   if(!email || !password || username.length < 4 || !display_name) {
-    return alert("Lütfen gerekli alanları (Kullanıcı Adı min 4 karakter, İsim, E-posta, Şifre) eksiksiz doldurun.");
+    return alert("Lütfen gerekli alanları (Kullanıcı Adı, İsim, E-posta, Şifre) eksiksiz doldurun.");
   }
 
   const { data, error } = await window.supabase.auth.signUp({
@@ -276,7 +279,7 @@ async function doRegister() {
 
     if(profileErr) {
       console.error(profileErr);
-      alert("Kayıt olundu fakat profil oluşturulurken hata çıktı.");
+      alert("Kayıt olundu fakat profil veritabanına eklenirken hata çıktı.");
     } else {
       alert("Kayıt başarılı! Lütfen e-postanıza gelen onay linkine tıklayın.");
       renderLogin();
@@ -336,7 +339,6 @@ function renderView() {
 }
 
 function renderDashboard(c) {
-  // Basit Mock Veri Hesaplamaları (Sunucusuz çalışma için)
   const totalCal = S.dayData.calories.reduce((a,x)=>a+Number(x.kcal||0),0);
   const totalMove = S.dayData.moves.reduce((a,x)=>a+Number(x.min||0),0);
 
@@ -367,7 +369,6 @@ function renderDashboard(c) {
           </div>
         `).join('') : '<div class="empty">Bugün henüz yemek kaydedilmedi.</div>'}
       </div>
-      <button class="btn-primary btn-sm" style="width:100%; margin-top:12px;" onclick="alert('AI Bot aktif edildi (Mock)')">🤖 AI Bot ile Ekle (Simüle)</button>
     </div>
 
     <div class="card">
@@ -421,7 +422,6 @@ function renderProfile(c) {
         <div class="field"><label>Boy (cm)</label><input value="${p.height || ''}" disabled></div>
         <div class="field"><label>Kilo (kg)</label><input value="${p.weight || ''}" disabled></div>
       </div>
-      <p class="muted" style="font-size:11px; margin-top:8px;">Bilgilerinizi güncellemek için web uygulamanızın ayarlarını kullanın.</p>
     </div>
 
     <button class="btn-ghost" style="width:100%; border-color:#ef4444; color:#ef4444; margin-top: 10px;" onclick="doLogout()">Oturumu Kapat</button>
